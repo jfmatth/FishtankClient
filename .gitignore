@@ -1,0 +1,9 @@
+*.pyc
+*.sq3
+.project
+.pydevproject
+*.torrent
+settings.*
+*.torrent
+misc/python
+misc/pycrypto
