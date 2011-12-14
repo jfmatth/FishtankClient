@@ -1,132 +1,70 @@
-# backup class - will backup necessary files 
-import os
-import re
-import zipfile
-import simplecrypt
-import uuid
+"""
+backup class
+"""
 
-# Should add:
-#    - Observer pattern to allow for callbacks during the backup.
-#    - a Prep() method to prep the files for backup, and then go() will just rip through all them and
-#      back them up.
+from client import simplecrypt
+import sys
+import zlib
+import os
+import tempfile
+import stat
+import hashlib
+import time
+import json
+import anydbm
+import zipfile
+import re
+
 
 class Backup(object):
-            
-    def filespec(self):
-        # get the filespec for the backup stream (i.e. *.doc | *.xls | etc)
-        # this will return a string for a regex parser (i.e. re.compile)
-        pass
+    
+    def __init__(self, filespec, tpath, dbpath, key ):
         
-    def filepath(self):
-        # return the system path where to put the files you're going to zip and encrypt
-        pass
-        
-    def temppath(self):
-        # temp path where to write the files during working
-        pass
+        self.filespec = filespec    # file regular expression of what files to backup.
+        self.workingpath = tpath    # where we should store our files.
+        self.dbpath = dbpath        # location where we should keep our DB files.
+        self.encryptkey = key       # Encryption key for simplecrypt, if None, then not encrypted
 
-    def _prebackup(self):
-        pass
+        self.backupfile = None      # result backup file (randomnunber.enc)
+        self.backuplist = None      # DB of backed up files.
+        self.tempfilename = None
         
-    def _backup(self):
-        # execute the backup
-        pass
+        # generate some random file names for use.
+        self.tempfile = tempfile.TemporaryFile(dir=self.workingpath)
+        self.backupfile = self.tempfile.name + ".zip"
+        self.backupfull = os.path.join(self.dbpath, "dbfull.db")
+        self.backupdiff = self.tempfile.name + ".db"
         
-    def _postbackup(self):
-        pass
-  
-    def _preencrypt(self):
-        pass
+        self.zipfile = zipfile.ZipFile(self.backupfile, "w", compression=zipfile.ZIP_DEFLATED)
+        self.regex = re.compile(self.filespec)
         
-    def _encrypt(self):
-        # encrypt the backup
-        pass
+        # open our DB's
+        self.dbfull = anydbm.open(self.backupfull, "w")
+        self.dbdiff = anydbm.open(self.backupdiff, "c")
+        
+    def fileinfo(self, filename):
+        """ returns a dict of all the file information we want of a file """
+        fi = {}
+        fs = os.stat(filename)
     
-    def _postencrypt(self):
-        pass
-  
-    def _encryptkey(self):
-        pass
-    
-    def go(self):
-        # do it, backup and encrypt what you should.
+        fi['crc'] = self.crcval(filename)
+        fi['filename'] = filename
+        fi['size'] = fs[stat.ST_SIZE]
+        fi['modified'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_MTIME]))
+        fi['accessed'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_ATIME]))
+        fi['created']  = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_CTIME]))
+
+    def crcval(self, fileName):
+        prev = 0
+        for eachLine in open(fileName,"rb"):
+            prev = zlib.crc32(eachLine, prev)
+        return "%X"%(prev & 0xFFFFFFFF)
  
-        self._prebackup()
-        self._backup()
-        self._postbackup()
-        
-        self._preencrypt()
-        self._encrypt()
-        self._postencrypt()
 
-# sub-class the Backup for using the Standard Library and stuff, don't encrypt
-class stdBackup(Backup):
+    def backup(self):
+        # main backup function
     
-    def __init__(self, config):
-        self.config = config
         
-        if self.config['temppath'] == None:
-            raise Exception('No temppath setting')
         
-        if self.config['filespec'] == None:
-            raise Exception('No Filespec setting')
-            
-    def temppath(self):
-        return self.config['temppath']
-        
-    def filespec(self):
-        return self.config['filespec']
-        
-    # override the necessary methods to get us to just zip up the file, don't encrypt for now.
-    def _backup(self):
-        self.zipFilename = self.temppath() + "temp.zip"
-        zf = zipfile.ZipFile(self.zipFilename,"w",zipfile.ZIP_DEFLATED)
-        regex = re.compile( self.filespec() )
-
-        # get all the files that match regex and are on our system, and put them in the zip file
-        # we'll do the root of whatever drive we are on now, but eventually, we'll have to do all drives.
-        # we can use a generator for all the drives in our backup set.
-        
-        for root,dirs,files in os.walk("/"):
-            for f in files:
-                if regex.match(f):
-                    if root == "/" :
-# need to change to use os.path.fullpath
-                        zf.write(root + f)
-                    else:
-                        zf.write(root + "/" + f)
-                        
-        zf.close()
-
-class encryptedBackup(stdBackup):
-
-    def __init__(self, config):
-        super(encryptedBackup, self).__init__(config)
-
-        # we just need a dict of stuff to store.
-        self.localstuff = {}
-        
-        # generate our own symetrical key for Simplecrypt
-        self.localstuff['encryptkey'] = str(uuid.uuid4() )
-
-#        # make sure we have the clientkey out there
-#        if self.config['clientkey']==None:
-#            raise Exception('No clientkey found')
-
-    def _encryptkey(self):
-        return self.localstuff['encryptkey']
-
-    def _encrypt(self):
-        # encrypt the zipfile.
-        self.encFilename = self.temppath() + "temp.enc"
-
-        s = simplecrypt.SimpleCrypt(self._encryptkey() )
-        fo = open(self.encFilename,"wb")
-        fi = open(self.zipFilename,"rb")
-        
-        # loop over the file and save to the encrypted version.
-        for block in s.EncryptFile(fi):
-            fo.write(block)
-
-        fi.close()
-        fo.close()
+        pass
+    
