@@ -43,35 +43,29 @@ class Backup(object):
         self.dbpath = dbpath        # location where we should keep our DB files.
         self.drives = drives        # what drives to try, can be directories.
 
+        # generate a file and name in the temporary space, ans use that as the starting 
+        # point for the zip and diff db names.
         self.tempfile = tempfile.TemporaryFile(dir=self.workingpath)
+        self.zipfilename = self.tempfile.name + ".zip"
+        self.diffdbname = os.path.join(self.dbpath, self.tempfile.name + ".db")
+        self.fulldbname = os.path.join(self.dbpath, "dbfull.db")
         
-        self.backupfile = self.tempfile.name + ".zip"
-        self.backupdb = os.path.join(self.dbpath, self.tempfile.name + ".db")
-        self.backupfull = os.path.join(self.dbpath, "dbfull.db")
-        
-        self.zipfile = zipfile.ZipFile(self.backupfile, "w", compression=zipfile.ZIP_DEFLATED)
+        # our actuall storage.
+        self.zipfile = zipfile.ZipFile(self.zipfilename, "w", compression=zipfile.ZIP_DEFLATED)
+        self.dbfull = anydbm.open(self.fulldbname, "c")
+        self.dbdiff = anydbm.open(self.diffdbname, "n")
+
         self.regex = re.compile(self.filespec)
-        
-        # open our DB's
-        self.dbfull = anydbm.open(self.backupfull, "c")
-        self.dbdiff = anydbm.open(self.backupdb, "n")
 
-
+        self.backupcount = 0
 
     def __del__(self):
-        print "Cleaning up..."
-
-        print "removing dbfull object"
         del(self.dbfull)
-        print "removing dbdiff object, and deleting file %s" % self.backupdb
         del(self.dbdiff)
-        os.remove(self.backupdb)
-        print "Removing object and deleting file %s" % self.backupfile
+        os.remove(self.diffdbname)
         self.zipfile.close()
         del(self.zipfile)
-        os.remove(self.backupfile)
-
-
+        os.remove(self.zipfilename)
 
     def fileinfo(self, filename):
         """ returns a dict of all the file information we want of a file """
@@ -122,7 +116,7 @@ class Backup(object):
             print "backing up %s" % currdir
             for root, dirs, files in os.walk(currdir):
                 for f in files:
-                    fullpath = os.path.join(root,f)  # c:/dir/dir/filename
+                    fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) # c:/dir/dir/filename
                     try:
                         if os.path.isfile(fullpath) and regex.match(fullpath):
                             finfo = self.fileinfo(fullpath)
@@ -148,6 +142,8 @@ class Backup(object):
                     except Exception as e:
                         print "%s Exception on %s" % (e, fullpath)
 
+            # we only do this once, so close all the files when we are done.
+            self.backupcount = len(dbdiff)
             thezip.close()
             dbfull.close()
             dbdiff.close()
