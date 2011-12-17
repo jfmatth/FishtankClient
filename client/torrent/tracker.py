@@ -185,8 +185,9 @@ class Tracker(object):
         try:
             u = urllib2.urlopen("http://" + self.tracker_ip + self.download_url + str(torr_hash))
             torr_short_name = u.headers.getheaders("Content-disposition")[0].split("=")[1]
-        except Exception, e:
-            print e, "\nFailed to read file from", self.tracker_ip
+        except:
+            log.debug("Failed to read file from %s" %  self.tracker_ip)
+            return ""
 
         # assuming we have the filename of the torrent...
         if torr_short_name:

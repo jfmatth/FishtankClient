@@ -3,6 +3,8 @@ torrent classes for tbackup
 
 add to python path for libtorrent: 
 set PYTHONPATH=C:\TorrentBackup\misc\clients\tbackup\bin\python\Lib\site-packages
+set PYTHONPATH=C:\FishtankClient\client\libtorrent
+set PYTHONPATH=Y:\client\libtorrent
 
 # Cloud Example
 import cloud
@@ -98,7 +100,7 @@ class Cloud(object):
     # default torrent extension
     ext = "torrent"
     
-    def __init__(self, torr_dir="c:/torrent", data_dir="c:/torrent/files", tracker_ip="10.0.0.1:8000", callback=lambda: ".", torr_db="torrent.db"):
+    def __init__(self, torr_dir="c:/torrent", data_dir="c:/torrent/files", tracker_ip="10.0.0.1:8000", callback=lambda: ".", db_dir="c:/torrent", db_name="torrent.db"):
         """
         Intialize class.
         
@@ -114,7 +116,7 @@ class Cloud(object):
         self.data_dir = data_dir
         self.torr_dir = torr_dir
         self.my_tracker = Tracker(tracker_ip)
-        self.session = Session(torr_dir, torr_db)
+        self.session = Session(torr_dir, db_dir, db_name)
         self.session.register(self.callback)
             
     def put(self, backup_file):
