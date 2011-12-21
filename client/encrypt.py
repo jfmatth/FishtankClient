@@ -4,6 +4,15 @@ Encrypts files
 """
 
 from client import simplecrypt
+from client.Crypto.PublicKey import RSA
+
+def EncryptAString(AString, PK):
+    """
+    Encrypts a string with the included public Key.  Uses Pycrypto
+    """
+    key = RSA.importKey(PK)
+    return key.encrypt(AString, 100)
+
 
 class Encryptafile(object):
     """
