@@ -5,7 +5,11 @@ import urllib
 import uuid
 import socket
 import json
+<<<<<<< HEAD
 from client.settingsmanager import settings
+=======
+from client import settingsmanager
+>>>>>>> 59cba3a39632b61453a59b6304d59d070d23acb2
 
 def getlogininfo():
     # YES - Hardcoded for now :)

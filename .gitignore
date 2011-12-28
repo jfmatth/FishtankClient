@@ -7,4 +7,10 @@ settings.*
 *.torrent
 misc/python
 misc/pycrypto
+<<<<<<< HEAD
 db/
+=======
+*.fastresume
+mycache
+*.db
+>>>>>>> 59cba3a39632b61453a59b6304d59d070d23acb2

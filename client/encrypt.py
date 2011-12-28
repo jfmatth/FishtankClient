@@ -17,6 +17,11 @@ def EncryptAString(AString, PK):
 class Encryptafile(object):
     """
     Encrypts a file with the key specified.
+    
+    example :
+    x = Encryptafile("filein.txt", "fileout.enc", "thisisakey")
+    x.execute()
+    
     """
 
     def __init__(self, filein, fileout, key=None):
