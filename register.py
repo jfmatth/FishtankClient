@@ -5,6 +5,7 @@ import urllib
 import uuid
 import socket
 import json
+
 from client.settingsmanager import settings
 
 def getlogininfo():
