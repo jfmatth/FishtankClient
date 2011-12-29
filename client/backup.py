@@ -4,7 +4,7 @@
             
             At the end of the Backup.execute() command, two attributes should be accessed:
             
-                Backup.Backupfile - a zip file containing all backed up files.
+                Backup.zipfile - a zip file containing all backed up files.
                 Backup.BackupDB   - a DBM database of files and their fileinfo.
                 
             

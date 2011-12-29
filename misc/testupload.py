@@ -1,30 +1,34 @@
 import httplib, mimetypes
 
 
-def post_multipart2(host=None, selector=None, fields=None, files=None):
+def post_multipart2(host=None, url=None, fields=None, files=None):
     """
->>> testupload.post_multipart2(host="172.16.223.128:8000", selector="/manager/up
-loadtest/", fields=[("myfield","this is my value")], files=[("xfile","file.txt",
-open("file.txt","rb").read() )] )
+	A function to post a file / fields to a HTTP server.
+	
+	see http://code.activestate.com/recipes/146306-http-client-to-post-using-multipartform-data/
+	
+	sample:	
+	post_multipart2(host="172.16.223.128:8000", 
+					url="/manager/uploadtest/", 
+					fields=[("myfield","this is my value")], 
+					files=[("xfile","file.txt",open("file.txt","rb").read() )] 
+					)
    
     """
   
     
-    if (host and selector and fields and files) == None:
-        raise Exception("Cant have None values")
-     
     content_type, body = encode_multipart_formdata(fields, files)
     h = httplib.HTTPConnection(host)
     headers = {
         'User-Agent': 'Python-httplib/2.6',
         'Content-Type': content_type
         }
-    h.request('POST', selector, body, headers)
+    h.request('POST', url, body, headers)
     res = h.getresponse()
     return res.status, res.reason, res.read()
 
 
-def post_multipart(host, selector, fields, files):
+def post_multipart(host, url, fields, files):
     """
     Post fields and files to an http host as multipart/form-data.
     fields is a sequence of (name, value) elements for regular form fields.
@@ -33,7 +37,7 @@ def post_multipart(host, selector, fields, files):
     """
     content_type, body = encode_multipart_formdata(fields, files)
     h = httplib.HTTP(host)
-    h.putrequest('POST', selector)
+    h.putrequest('POST', url)
     h.putheader('content-type', content_type)
     h.putheader('content-length', str(len(body)))
     h.endheaders()
