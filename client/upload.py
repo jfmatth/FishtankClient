@@ -42,7 +42,6 @@ def encode_multipart_formdata(fields, files):
         L.append('Content-Disposition: form-data; name="%s"' % key)
         L.append('')
         L.append(value)
-    print L
     
     for (key, filename, value) in files:
         L.append('--' + BOUNDARY)
@@ -52,7 +51,6 @@ def encode_multipart_formdata(fields, files):
         L.append(value)
     L.append('--' + BOUNDARY + '--')
     L.append('')
-    print L
     body = CRLF.join(L)
     content_type = 'multipart/form-data; boundary=%s' % BOUNDARY
     return content_type, body

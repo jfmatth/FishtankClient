@@ -109,7 +109,7 @@ class Backup(object):
         if not dbfull.isOpen():
             return
 
-        log.info("Backup starting..")
+        log.debug("Backup starting..")
         for currdir in self.drives:
             log.info("backing up %s" % currdir)
             for root, dirs, files in os.walk(currdir):
@@ -121,21 +121,21 @@ class Backup(object):
                             
                             # figure out what we need to do with it.
                             if not dbfull.has_key(fullpath):
-                                log.info("Adding %s" % fullpath)
+                                log.debug("Adding %s" % fullpath)
                                 sfinfo = json.dumps(finfo)
                                 dbfull[fullpath] = sfinfo
                                 dbdiff[fullpath] = sfinfo
                                 thezip.write(fullpath)
                             else:
-                                log.info("Checking %s" % fullpath)
+                                log.debug("Checking %s" % fullpath)
                                 if not json.loads(dbfull[fullpath])['crc'] == finfo['crc']:
-                                    log.info("updating DB")
+                                    log.debug("updating DB")
                                     sfinfo = json.dumps(finfo)
                                     dbfull[fullpath] = sfinfo
                                     dbdiff[fullpath] = sfinfo
                                     thezip.write(fullpath)
                     except Exception as e:
-                        log.debug("%s Exception on %s" % (e, fullpath) )
+                        log.critical("%s Exception on %s" % (e, fullpath) )
 
             # we only do this once, so close all the files when we are done.
             self.backupcount = len(dbdiff)
