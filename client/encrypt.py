@@ -55,7 +55,7 @@ def EncryptAString(AString, PK):
         # fi.close()
         # fo.close()
 		
-def EncryptAfile(filein, fileout, key=None):
+def EncryptAFile(filein = None, fileout=None, key=None):
     """
     Encrypts a file with the key specified, using simplecrypt
 
