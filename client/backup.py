@@ -68,7 +68,7 @@ class Backup(object):
         """ returns a dict of all the file information we want of a file """
         fi = {}
         fs = os.stat(filename)
-    
+
         fi['crc'] = self.crcval(filename)
         fi['filename'] = filename
         fi['size'] = fs[stat.ST_SIZE]
@@ -78,16 +78,11 @@ class Backup(object):
         
         return fi
 
-
-
     def crcval(self, fileName):
         prev = 0
         for eachLine in open(fileName,"rb"):
             prev = zlib.crc32(eachLine, prev)
         return "%X"%(prev & 0xFFFFFFFF)
-
-
- 
     
     def _backupfiles(self):
         """
@@ -127,9 +122,8 @@ class Backup(object):
                                 dbdiff[fullpath] = sfinfo
                                 thezip.write(fullpath)
                             else:
-                                log.debug("Checking %s" % fullpath)
                                 if not json.loads(dbfull[fullpath])['crc'] == finfo['crc']:
-                                    log.debug("updating DB")
+                                    log.debug("refreshing %s" % fullpath)
                                     sfinfo = json.dumps(finfo)
                                     dbfull[fullpath] = sfinfo
                                     dbdiff[fullpath] = sfinfo

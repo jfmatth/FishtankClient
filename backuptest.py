@@ -13,11 +13,13 @@ import os
 # backup all .txt files from c:/program files/
 log.info("Backup / encryption testing starting")
 
-filespec = ".+\.txt$"
+#filespec = ".+\.py$|.+\.txt$"
+filespec = settings["filespec"]
 temppath = "c:/temp/"
 dbpath = "./"
 #drives = ("c:/code/fishtankclient/",)
-drives = ("c:/",)
+#drives = ("c:/code/",)
+drives = (settings["drives"],)
 pk = settings[".publickey"]
 
 # backup.
@@ -34,20 +36,21 @@ if b.backupcount > 0:
 	fi = b.zipfilename
 	fo = b.tempfile.name + ".enc"
 	key = str(uuid.uuid4() )
-	
+
 	log.info("Encrypting %s" % fi)
-	
+
 	encrypt.EncryptAFile(filein=fi,fileout=fo,key=key)
 	# file is encrypted, sitting at fileout.
+
 	# encrypt the key and push to server?
 	ekey = "".join(encrypt.EncryptAString(key, pk))
 
 	rawfilename = os.path.basename(b.diffdbname)
-	
+
 	# now push all this to the server
-	host = "172.16.223.128:8000"
+	host = settings[".managerhost"]
 	url = "/manager/dbmupload/"
-	fields = [("eKey",urllib.quote(ekey)), ]
+	fields = [("eKey",urllib.quote(ekey)),("guid", settings[".guid"]) ]
 	files = [("dFile",rawfilename,open(b.diffdbname,"rb").read() )]
 	
 	log.info("Uploading")
@@ -64,6 +67,5 @@ else:
 	log.info("No files backed up, oh well")
 
 log.info("Done")
-raw_input("press any key")
 
 del(b)

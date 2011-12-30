@@ -98,6 +98,9 @@ class Manager(object):
         
         # URLSettings is none to start in case we don't have enough to bootstrap.
         self.URLSettings = None
+        if self._urlcheck():
+            self._urldict()
+            self._refresh()
 
     def __del__(self):
         # before we die, save our settings file
@@ -134,7 +137,7 @@ class Manager(object):
                 self.URLSettings = URLDict( self['.managerhost'],
                                             self['.settingurl'],
                                             self['.guid'])
-                self._refresh()
+#                self._refresh()
                 return self.URLSettings
             else:
                 raise Exception("Not enough settings for URL connection to manager")

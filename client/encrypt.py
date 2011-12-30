@@ -6,6 +6,8 @@ Encrypts files
 from client import simplecrypt
 from client.Crypto.PublicKey import RSA
 
+from client.settingsmanager import settings
+
 def EncryptAString(AString, PK):
     """
     Encrypts a string with the included public Key.  
@@ -65,7 +67,8 @@ def EncryptAFile(filein = None, fileout=None, key=None):
     Encryptafile("filein.txt", "fileout.enc", "thisisakey")	
     """
 
-    s = simplecrypt.SimpleCrypt(key)
+    s = simplecrypt.SimpleCrypt(key, BLOCK_SZ=(int(settings["block_sz"]) or 1024) )
+#    s = simplecrypt.SimpleCrypt(key)
 
     fi = open(filein,"rb")
     fo = open(fileout,"wb")
