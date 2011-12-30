@@ -15,9 +15,9 @@ def EncryptAString(AString, PK):
 	
 	sEncrypted = EncryptAString("This will be encrypted", myPK)
     """
-	
+
     key = RSA.importKey(PK)
-    return key.encrypt(AString, 100)
+    return key.encrypt( )
 
 
 # class Encryptafile(object):
@@ -54,7 +54,7 @@ def EncryptAString(AString, PK):
 
         # fi.close()
         # fo.close()
-		
+
 def EncryptAfile(filein, fileout, key=None):
     """
     Encrypts a file with the key specified, using simplecrypt

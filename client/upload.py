@@ -1,7 +1,6 @@
 import httplib, mimetypes
 
-
-def post_multipart2(host=None, url=None, fields=None, files=None):
+def httppost_multipart(host=None, url=None, fields=None, files=None):
     """
 	A function to post a file / fields to a HTTP server.
 	
@@ -15,7 +14,8 @@ def post_multipart2(host=None, url=None, fields=None, files=None):
 					)
    
     """
-  
+    if (host==None or url==None):
+        raise Exception("must provide at least host and url parameters")
     
     content_type, body = encode_multipart_formdata(fields, files)
     h = httplib.HTTPConnection(host)
@@ -27,23 +27,6 @@ def post_multipart2(host=None, url=None, fields=None, files=None):
     res = h.getresponse()
     return res.status, res.reason, res.read()
 
-
-def post_multipart(host, url, fields, files):
-    """
-    Post fields and files to an http host as multipart/form-data.
-    fields is a sequence of (name, value) elements for regular form fields.
-    files is a sequence of (name, filename, value) elements for data to be uploaded as files
-    Return the server's response page.
-    """
-    content_type, body = encode_multipart_formdata(fields, files)
-    h = httplib.HTTP(host)
-    h.putrequest('POST', url)
-    h.putheader('content-type', content_type)
-    h.putheader('content-length', str(len(body)))
-    h.endheaders()
-    h.send(body)
-    errcode, errmsg, headers = h.getreply()
-    return h.file.read()
 
 def encode_multipart_formdata(fields, files):
     """
@@ -59,6 +42,8 @@ def encode_multipart_formdata(fields, files):
         L.append('Content-Disposition: form-data; name="%s"' % key)
         L.append('')
         L.append(value)
+    print L
+    
     for (key, filename, value) in files:
         L.append('--' + BOUNDARY)
         L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
@@ -67,19 +52,10 @@ def encode_multipart_formdata(fields, files):
         L.append(value)
     L.append('--' + BOUNDARY + '--')
     L.append('')
+    print L
     body = CRLF.join(L)
     content_type = 'multipart/form-data; boundary=%s' % BOUNDARY
     return content_type, body
 
 def get_content_type(filename):
     return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-
-
-
-
-
-
-
-
-
-
