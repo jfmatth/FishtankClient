@@ -15,17 +15,23 @@ class Session(object):
     Handle serving of torrents to peers.
     """
     
-    # Default values for serving a torrent
-    to_port_default = 40000
-    from_port_default = 40010
-    
-    def __init__(self, session_dir, db_name):
+    def __init__(self, 
+                 session_dir, 
+                 db_name,
+                 to_port = 40000,
+                 from_port = 40010):
         self.session = None
         self.session_dir = session_dir
         self.torr_db = os.path.join(session_dir, db_name)
         self.db = None                 # pointer to our torrent DB
         self.handles = []
         self.alerts = []
+        self.max_upload = 0
+        self.max_download = 0
+        
+        # Default values for serving a torrent
+        self.to_port = to_port
+        self.from_port = from_port
     
     def register(self, callback):
         """
@@ -36,23 +42,105 @@ class Session(object):
         else:
             raise Exception("Object %s not callable." % str(callback))
         
-    def __check_callback(self):
+    def _check_callback(self):
+        """
+        A callback is required for this class.  It must be registered before a session
+        can be started.  This performs a simple check.
+        """
         # need to call register() first
         if not self.callback:
             raise Exception("Callback not specified.")
         
-    def serve(self, ti, to_port=to_port_default, from_port=from_port_default):
+    def configure_rates(self, rate):
+        """
+        Set our max upload and download rates.
+        """
+        
+        if rate == "unlimited":
+            self.max_download = 0
+            self.max_upload = 0
+        elif rate == "high":
+            self.max_download = 2**10
+            self.max_upload = 2**10
+        elif rate == "low":
+            self.max_download = 2**6
+            self.max_upload = 2 ** 6
+        else:
+            # "med" is the default
+            self.max_download = 2**8
+            self.max_upload = 2**8
+        
+        # if the session already exists, just change it on the fly...
+        if self.session:
+            log.debug("Setting upload and download rates...")
+            self.session.set_upload_rate_limit(self.max_upload)
+            self.session.set_download_rate_limit(self.max_download)
+            
+    def show_rates(self):
+        """
+        Show our global upload and download rates.
+        """
+        if self.session:
+            log.info("Upload Rate Limit: %d" % self.session.upload_rate_limit())
+            log.info("Download Rate Limit: %d" % self.session.download_rate_limit())
+        
+    def _set_max_download(self, max_download):
+        self.max_download = max_download
+        
+    def _set_max_upload(self, max_upload):
+        self.max_upload = max_upload
+        
+        
+    # needs work...
+    def friendly_numbers(self, number):
+        """
+        Friend-lify numbers before we send them back to the user.  Works with longs and ints only.
+        """
+        
+        suffix = ["B", "KB", "MB", "GB", "TB", "PB"]
+        
+        c = 0
+        while (number / 1000):
+            number /= 1000
+            c += 1
+        
+        # gigabytes!  wowzers!
+        if c == :
+            out = "%.2f%s" % (( number / 1000000000.0 ), "GB")
+        # megabytes.  Now you're talking.
+        elif (number / 1000000) is not 0 and (number / 1000000) is not 0L:
+            out = "%.2f%s" % (( number / 1000000.0 ), "MB")
+        # kilobytes.  Get off the dialup!
+        if (number / 1000) is not 0 and (number / 1000) is not 0L:
+            out = "%.2f%s" % (( number / 1000.0 ), "KB")
+        # bytes?!  I cannot save you.
+        else:
+            out = "%.2f%s" % ( number, "B")
+            
+        return out
+        
+    def _configure_session(self):
+        """
+        This starts our session using any parameters that we've set -- ports, upload/download
+        rates, etc.
+        """
+        self.session = lt.session()
+        self.session.listen_on(self.to_port, self.from_port)
+        self.session.set_upload_rate_limit(self.max_upload)
+        self.session.set_download_rate_limit(self.max_download)
+        
+        
+    def serve(self, ti):
         """
         Create session.  Add torrent to session if it doesn't already exist.
         
         Parameters
         ti: TorrentMetaInfo object
         """
-            
-        log.debug("to_port: %s, from_port: %s" %(to_port, from_port))
-        log.debug("file save path: %s, torr save path: %s\n" %(ti.file_path, ti.torr_path))
         
-        self.__check_callback()
+        log.info("Serving torrent %s from %s" % (ti.file_path, ti.torr_path))
+
+        self._check_callback()
         
         if not ti.is_valid_torr():
             log.debug("No torrent specified in TorrentMetaInfo")
@@ -61,8 +149,7 @@ class Session(object):
         # start the session if it hasn't been already
         if not self.session:
             log.debug("No session exists, starting...")
-            self.session = lt.session()
-            self.session.listen_on(to_port, from_port)
+            self._configure_session()
             
         # check if we're serving this torrent, and if not, add it to the session
         th = self.session.find_torrent(ti.info_hash)
@@ -96,7 +183,8 @@ class Session(object):
                 out = '%s ' % handle.get_torrent_info().name()[:40] + ' '
                 out += '%s ' % states[torr_status.state] + ' '
                 out += '%2.0f%% ' % (torr_status.progress * 100) + ' '
-                out += 'download %s/s (%s)' % (torr_status.download_rate, torr_status.total_download)
+                out += 'download %s/s (%s)' % (self.friendly_numbers(torr_status.download_rate), 
+                                               self.friendly_numbers(torr_status.total_download))
                 log.debug(out)
                 time.sleep(1)
                 

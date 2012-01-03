@@ -98,9 +98,17 @@ class Cloud(object):
     This class is reponsible for "put"-ting and "get"-ting files to and from the cloud.
     """
     
-    def __init__(self, torr_dir="c:/torrent", data_dir="c:/torrent/files", tracker_ip="10.0.0.1:8000", callback=lambda: ".", session_dir="c:/torrent", db_name="torrent.db", ext=".torrent"):
+    def __init__(self, 
+                 torr_dir="c:/torrent", 
+                 data_dir="c:/torrent/files", 
+                 tracker_ip="10.0.0.1:8000", 
+                 callback=lambda: ".", 
+                 session_dir="c:/torrent", 
+                 db_name="torrent.db", 
+                 ext=".torrent",
+                 rate="med"):
         """
-        Intialize class.
+        Initialize class.
         
         Parameters
         torr_dir: Location for torrent meta data files
@@ -108,6 +116,7 @@ class Cloud(object):
         tracker_ip: IP:PORT string of tracker
         callback: option function which will be called while attempting to seed torrents.
         torr_db: Name of anydbm database where we save what we're serving.
+        rate: low | med | high | unlimited
         """        
         
         self.callback = callback
@@ -118,9 +127,13 @@ class Cloud(object):
         self.torr_db = os.path.join(session_dir, db_name)
         self.db = None                 # pointer to our torrent DB
         
+        # setup our tracker
         self.my_tracker = Tracker(tracker_ip)
+        
+        # setup our session
         self.session = Session(session_dir, db_name)
         self.session.register(self.callback)
+        self.session.configure_rates(rate)
             
     def put(self, backup_file):
         """
@@ -173,14 +186,21 @@ class Cloud(object):
         Parameters
         torr_hash_l: string, or list of strings 
         """
-        self.session.serve_torrent_by_hash(torr_hash_l, self.torr_dir, self.data_dir, self.my_tracker.tracker_ip, self.ext)
+        self.session.serve_torrent_by_hash(torr_hash_l, 
+                                           self.torr_dir, 
+                                           self.data_dir, 
+                                           self.my_tracker.tracker_ip, 
+                                           self.ext)
         
     def serve_torrents(self):
         """
         Serve up all torrents in our torr directory.  Does not take any parameters, simply checks for all torrents
         in our torrent meta data directory, and serves them.
         """
-        self.session.serve_all_torrents(self.torr_dir, self.data_dir, self.my_tracker.tracker_ip, self.ext)
+        self.session.serve_all_torrents(self.torr_dir, 
+                                        self.data_dir, 
+                                        self.my_tracker.tracker_ip, 
+                                        self.ext)
                
     def get_torrents(self, torr_hash_l):
         """
