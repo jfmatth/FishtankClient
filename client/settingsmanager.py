@@ -9,8 +9,10 @@ print x["mysetting"]
 
 x["mysetting"] = "blah blah blah"
 
-if <key> starts with "setting." then that value will be written to the local
+if <key> starts with "." then that value will be written to the local
 "settings" file (default is settings.txt)
+
+if <key> starts with #, thats special on the server.
 
 """
 

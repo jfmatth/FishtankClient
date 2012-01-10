@@ -10,7 +10,7 @@ from client.torrent import cloud
 import uuid
 import urllib
 import os
-
+	
 # backup all .txt files from c:/program files/
 log.info("Backup / encryption testing starting")
 
@@ -47,7 +47,8 @@ if b.backupcount > 0:
 
 	encrypt.EncryptAFile(filein=fi,fileout=fo,key=key)
 	# file is encrypted, sitting at fileout.
-
+	
+	# delete our original file.
 	# encrypt the key and push to server?
 	ekey = "".join(encrypt.EncryptAString(key, pk))
 
@@ -62,9 +63,9 @@ if b.backupcount > 0:
 	log.info("Uploading %s" % b.diffdbname)
 	
 	status, reason, data = upload.httppost_multipart(host, url, fields, files)
-	log.debug("Status response = %s" % status)
-	log.debug("reason %s" % reason)
-	log.debug(data)
+	log.info("Status response = %s" % status)
+	log.info("reason %s" % reason)
+	log.info(data)
 
 	# so the file is encrypted and uploaded, now put it in the cloud.
 	if settings["tracker_ip"] == None:
@@ -75,6 +76,7 @@ if b.backupcount > 0:
 				    data_dir = settings["cloud_files"],
 				    )
 	c.put(fo)
+	del(b)
 
 	raw_input("press any key to stop the cloud")
 
@@ -85,4 +87,3 @@ else:
 
 log.info("Done")
 
-del(b)
