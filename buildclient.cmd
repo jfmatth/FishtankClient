@@ -21,15 +21,12 @@ set sfx="c:\program files\7-zip\7zcon.sfx"
 :: add Python
 ECHO Adding python...
 cd misc
-:: still in misc.
-::XCOPY misc\python %destdir%\python /e/f/i > nul
 %zip% a -r %destzip% python > nul
 cd..
 
 :: Copy our client files to the lib directory
 ECHO Adding client files...
-::XCOPY client\*.py %destdir%\client /e/f/i > nul
-%zip% a -r %destzip% *.py > nul
+%zip% a -r %destzip% *.py -ir*.dll -ir*.pyd > nul
 
 ECHO Settings...
 ::COPY settings.txt %destdir% > nul

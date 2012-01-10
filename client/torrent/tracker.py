@@ -128,7 +128,7 @@ class Tracker(object):
         # Setup our POST values
         fields = self.post_fields
         files = [(self.post_file_path, os.path.basename(ti.torr_name), open(ti.torr_name, "rb").read())]
-                
+                    
         content_type, body = self.encode_multipart_formdata(fields, files)
         headers = {'Content-Type': content_type }
         r = urllib2.Request("http://%s%s" % (self.tracker_ip, self.upload_url), body, headers)

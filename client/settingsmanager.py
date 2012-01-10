@@ -18,10 +18,13 @@ import anydbm
 import urllib
 import httplib
 import ConfigParser
+import os
+
+LOCALCHAR = "."
 
 class LocalDict(object):
     # redefine the init call to use a filename instead
-    def __init__(self, thefile=None, create=False):
+    def __init__(self, thefile=None):
         # we only have one section name for the config
         self.section = "settings"
         self.configfile = thefile
@@ -29,7 +32,9 @@ class LocalDict(object):
         # read from our config file, this will raise an exception if the file does not
         # exist.  Good for now.
         self.cp = ConfigParser.SafeConfigParser()
-        if create:
+        
+            
+        if not os.path.isfile(self.configfile):
             self.cp.add_section(self.section)
         else:
             self.cp.readfp( open(self.configfile) )
@@ -78,7 +83,7 @@ class URLDict(object):
             raise Exception("Error setting value for %s, response = %s" % (key, response.read()) )
 
 
-class Settings(object):
+class Manager(object):
     """  
     Settings docstring 
     """
@@ -86,17 +91,21 @@ class Settings(object):
 
     def __init__(self,thefile="settings.txt"):
         # a link to our local settings file, bootstrap.
-        self.LocalSettings = LocalDict(thefile, False)
+        self.LocalSettings = LocalDict(thefile)
         
         # our DB cache for all our settings from the URL /manager/settings
         self.DBMSettings = anydbm.open("settings.db", "c")
         
         # URLSettings is none to start in case we don't have enough to bootstrap.
         self.URLSettings = None
+        if self._urlcheck():
+            self._urldict()
+            self._refresh()
 
     def __del__(self):
         # before we die, save our settings file
-        self.LocalSettings.save()
+        if not self.LocalSettings == None:
+            self.LocalSettings.save()
 
     def _urlcheck(self):
         """
@@ -113,7 +122,7 @@ class Settings(object):
         """
         # if we have all the values we need to hookup to the URL
         for key in self.DBMSettings.keys():
-            if not key.startswith(Settings.LOCALCHAR):
+            if not key.startswith(LOCALCHAR):
                 self.DBMSettings[key] = self._urldict()[key]
 
     def _urldict(self):
@@ -128,7 +137,7 @@ class Settings(object):
                 self.URLSettings = URLDict( self['.managerhost'],
                                             self['.settingurl'],
                                             self['.guid'])
-                self._refresh()
+#                self._refresh()
                 return self.URLSettings
             else:
                 raise Exception("Not enough settings for URL connection to manager")
@@ -138,7 +147,7 @@ class Settings(object):
             and then cache it locally in the DB """
             
         # if it's a 'setting.' then check the DBM, the settings.txt
-        if key.startswith(Settings.LOCALCHAR):
+        if key.startswith(LOCALCHAR):
             if self.DBMSettings.has_key(key):
                 return self.DBMSettings[key]
             else:
@@ -148,7 +157,6 @@ class Settings(object):
                     return self.DBMSettings[key]
                 else:
                     #if it's not in the local, then we don't have it.
-                    print "Nothing found for key"
                     return None
         else:
             # this is only a manager setting, see if we have it in the DBM otherwise, check the 
@@ -167,7 +175,7 @@ class Settings(object):
         """ set the value in the DB or URL or settings file.  if key starts with "setting." then it is
             stored locally only in the settings file
         """
-        if key.startswith(Settings.LOCALCHAR):
+        if key.startswith(LOCALCHAR):
             # if we are putting a local setting, store it in the DB and settings file.
             self.LocalSettings[key] = value
             self.DBMSettings[key] = value
@@ -175,3 +183,8 @@ class Settings(object):
             # it's not something local only, so setup the DBM and put it on the URL
             self.DBMSettings[key] = value
             self._urldict()[key] = value
+
+
+# define settings here
+
+settings = Manager()

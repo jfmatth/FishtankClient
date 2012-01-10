@@ -1,132 +1,143 @@
-# backup class - will backup necessary files 
-import os
-import re
-import zipfile
-import simplecrypt
-import uuid
+"""
+Backup() will backup all files specified by filespec and drives.  The system will scan for changes to 
+files and zip them up and keep a record of them in a DBM file.
 
-# Should add:
-#    - Observer pattern to allow for callbacks during the backup.
-#    - a Prep() method to prep the files for backup, and then go() will just rip through all them and
-#      back them up.
+At the end of the backup.execute(), two files should be retrieved:
+  .zipfilename - full pathname to the .zip file that contains all the files
+  .diffdbname  - full pathname to the .dbm file that indexes all the files.
+"""
+
+import zlib
+import os
+import tempfile
+import stat
+import time
+import json
+import anydbm
+import zipfile
+import re
+
+from client.logger import log
 
 class Backup(object):
-            
-    def filespec(self):
-        # get the filespec for the backup stream (i.e. *.doc | *.xls | etc)
-        # this will return a string for a regex parser (i.e. re.compile)
-        pass
-        
-    def filepath(self):
-        # return the system path where to put the files you're going to zip and encrypt
-        pass
-        
-    def temppath(self):
-        # temp path where to write the files during working
-        pass
-
-    def _prebackup(self):
-        pass
-        
-    def _backup(self):
-        # execute the backup
-        pass
-        
-    def _postbackup(self):
-        pass
-  
-    def _preencrypt(self):
-        pass
-        
-    def _encrypt(self):
-        # encrypt the backup
-        pass
     
-    def _postencrypt(self):
-        pass
-  
-    def _encryptkey(self):
-        pass
+    def __init__(self, filespec, tpath, dbpath, drives):
+        """
+        filespec - Regex of which files to backup.
+        tpath    - Temp path for working files.
+        dbpath   - Path to where databases are stored.
+        drives   - what drives to go through
+        """
+
+# need to clean up the init section and how i open files, etc, move to _backupfiles method?
+
+        # error checking
+        if not type(drives) == tuple:
+            raise Exception("drives parameter needs to be a tuple")
+        
+        self.filespec = filespec    # file regular expression of what files to backup.
+        self.workingpath = tpath    # where we should store our files.
+        self.dbpath = dbpath        # location where we should keep our DB files.
+        self.drives = drives        # what drives to try, can be directories.
+
+        # generate a file and name in the temporary space, ans use that as the starting 
+        # point for the zip and diff db names.
+        self.tempfile = tempfile.TemporaryFile(dir=self.workingpath)
+        self.zipfilename = self.tempfile.name + ".zip"
+        self.diffdbname = os.path.join(self.dbpath, self.tempfile.name + ".db")
+        self.fulldbname = os.path.join(self.dbpath, "dbfull.db")
+        
+        # our actuall storage.
+        self.zipfile = zipfile.ZipFile(self.zipfilename, "w", compression=zipfile.ZIP_DEFLATED)
+        self.dbfull = anydbm.open(self.fulldbname, "c")
+        self.dbdiff = anydbm.open(self.diffdbname, "n")
+
+        self.regex = re.compile(self.filespec)
+
+        self.backupcount = 0
+
+    def __del__(self):
+        del(self.dbfull)
+        del(self.dbdiff)
+        os.remove(self.diffdbname)
+        self.zipfile.close()
+        del(self.zipfile)
+        os.remove(self.zipfilename)
+
+    def fileinfo(self, filename):
+        """ returns a dict of all the file information we want of a file """
+        fi = {}
+        fs = os.stat(filename)
+
+        fi['crc'] = self.crcval(filename)
+        fi['filename'] = filename
+        fi['size'] = fs[stat.ST_SIZE]
+        fi['modified'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_MTIME]))
+        fi['accessed'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_ATIME]))
+        fi['created']  = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_CTIME]))
+        
+        return fi
+
+    def crcval(self, fileName):
+        prev = 0
+        for eachLine in open(fileName,"rb"):
+            prev = zlib.crc32(eachLine, prev)
+        return "%X"%(prev & 0xFFFFFFFF)
     
-    def go(self):
-        # do it, backup and encrypt what you should.
- 
-        self._prebackup()
-        self._backup()
-        self._postbackup()
+    def _backupfiles(self):
+        """
+        does the actual backup of files to the .zip file.  Comparing the CRC of files it finds to what's in
+        the fulldb, if something is found that doesn't match or isn't there, it adds to the diff db and then
+        adds to teh zip file.
         
-        self._preencrypt()
-        self._encrypt()
-        self._postencrypt()
+        At the end of execute(), you should have an updated full DB and a diffdb with all files that are in the
+        zip file.
+        """
 
-# sub-class the Backup for using the Standard Library and stuff, don't encrypt
-class stdBackup(Backup):
-    
-    def __init__(self, config):
-        self.config = config
-        
-        if self.config['temppath'] == None:
-            raise Exception('No temppath setting')
-        
-        if self.config['filespec'] == None:
-            raise Exception('No Filespec setting')
-            
-    def temppath(self):
-        return self.config['temppath']
-        
-    def filespec(self):
-        return self.config['filespec']
-        
-    # override the necessary methods to get us to just zip up the file, don't encrypt for now.
-    def _backup(self):
-        self.zipFilename = self.temppath() + "temp.zip"
-        zf = zipfile.ZipFile(self.zipFilename,"w",zipfile.ZIP_DEFLATED)
-        regex = re.compile( self.filespec() )
+       
+        # local pointers to class variables.
+        dbfull = self.dbfull
+        dbdiff = self.dbdiff	
+        thezip = self.zipfile
+        regex = self.regex
 
-        # get all the files that match regex and are on our system, and put them in the zip file
-        # we'll do the root of whatever drive we are on now, but eventually, we'll have to do all drives.
-        # we can use a generator for all the drives in our backup set.
-        
-        for root,dirs,files in os.walk("/"):
-            for f in files:
-                if regex.match(f):
-                    if root == "/" :
-# need to change to use os.path.fullpath
-                        zf.write(root + f)
-                    else:
-                        zf.write(root + "/" + f)
-                        
-        zf.close()
+        if not dbfull.isOpen():
+            return
 
-class encryptedBackup(stdBackup):
+        log.debug("Backup starting..")
+        for currdir in self.drives:
+            log.info("backing up %s" % currdir)
+            for root, dirs, files in os.walk(currdir):
+                for f in files:
+                    fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) # c:/dir/dir/filename
+                    try:
+                        if os.path.isfile(fullpath) and regex.match(fullpath):
+                            finfo = self.fileinfo(fullpath)
+                            
+                            # figure out what we need to do with it.
+                            if not dbfull.has_key(fullpath):
+                                log.debug("Adding %s" % fullpath)
+                                sfinfo = json.dumps(finfo)
+                                dbfull[fullpath] = sfinfo
+                                dbdiff[fullpath] = sfinfo
+                                thezip.write(fullpath)
+                            else:
+                                if not json.loads(dbfull[fullpath])['crc'] == finfo['crc']:
+                                    log.debug("refreshing %s" % fullpath)
+                                    sfinfo = json.dumps(finfo)
+                                    dbfull[fullpath] = sfinfo
+                                    dbdiff[fullpath] = sfinfo
+                                    thezip.write(fullpath)
+                    except Exception as e:
+                        log.critical("%s Exception on %s" % (e, fullpath) )
 
-    def __init__(self, config):
-        super(encryptedBackup, self).__init__(config)
-
-        # we just need a dict of stuff to store.
-        self.localstuff = {}
-        
-        # generate our own symetrical key for Simplecrypt
-        self.localstuff['encryptkey'] = str(uuid.uuid4() )
-
-#        # make sure we have the clientkey out there
-#        if self.config['clientkey']==None:
-#            raise Exception('No clientkey found')
-
-    def _encryptkey(self):
-        return self.localstuff['encryptkey']
-
-    def _encrypt(self):
-        # encrypt the zipfile.
-        self.encFilename = self.temppath() + "temp.enc"
-
-        s = simplecrypt.SimpleCrypt(self._encryptkey() )
-        fo = open(self.encFilename,"wb")
-        fi = open(self.zipFilename,"rb")
-        
-        # loop over the file and save to the encrypted version.
-        for block in s.EncryptFile(fi):
-            fo.write(block)
-
-        fi.close()
-        fo.close()
+            # we only do this once, so close all the files when we are done.
+            self.backupcount = len(dbdiff)
+            thezip.close()
+            dbfull.close()
+            dbdiff.close()
+       
+            log.info("Backup completed, %s files backed up" % self.backupcount)
+	   
+    def execute(self):
+        self._backupfiles()
