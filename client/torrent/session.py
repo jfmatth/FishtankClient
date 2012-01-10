@@ -1,4 +1,4 @@
-import libtorrent as lt
+from libtorrent import libtorrent as lt
 import glob
 import os
 import time
@@ -6,6 +6,7 @@ import logging
 import anydbm
 import sys
 from torrentmetainfo import TorrentMetaInfo
+#from settingsmanager import *
 
 # setup 'ma logging
 log = logging.getLogger("cloud.session")
@@ -60,15 +61,15 @@ class Session(object):
             self.max_download = 0
             self.max_upload = 0
         elif rate == "high":
-            self.max_download = 2**10
-            self.max_upload = 2**10
+            self.max_download = 2**30
+            self.max_upload = 2**30
         elif rate == "low":
-            self.max_download = 2**6
-            self.max_upload = 2 ** 6
+            self.max_download = 2** 12
+            self.max_upload = 2 ** 12
         else:
             # "med" is the default
-            self.max_download = 2**8
-            self.max_upload = 2**8
+            self.max_download = 2**15
+            self.max_upload = 2**15
         
         # if the session already exists, just change it on the fly...
         if self.session:
@@ -83,6 +84,8 @@ class Session(object):
         if self.session:
             log.info("Upload Rate Limit: %d" % self.session.upload_rate_limit())
             log.info("Download Rate Limit: %d" % self.session.download_rate_limit())
+            log.info("Upload Rate Limit (Local): %d" % self.session.local_upload_rate_limit())
+            log.info("Download Rate Limit (Local): %d" % self.session.local_download_rate_limit())
         
     def _set_max_download(self, max_download):
         self.max_download = max_download
@@ -97,15 +100,15 @@ class Session(object):
         Friend-lify numbers before we send them back to the user.  Works with longs and ints only.
         """
         
-        suffix = ["B", "KB", "MB", "GB", "TB", "PB"]
-        
-        c = 0
-        while (number / 1000):
-            number /= 1000
-            c += 1
+#        suffix = ["B", "KB", "MB", "GB", "TB", "PB"]
+#        
+#        c = 0
+#        while (number / 1000):
+#            number /= 1000
+#            c += 1
         
         # gigabytes!  wowzers!
-        if c == :
+        if (number / 1000000000) is not 0 and (number / 1000000000) is not 0L:
             out = "%.2f%s" % (( number / 1000000000.0 ), "GB")
         # megabytes.  Now you're talking.
         elif (number / 1000000) is not 0 and (number / 1000000) is not 0L:
@@ -125,9 +128,19 @@ class Session(object):
         rates, etc.
         """
         self.session = lt.session()
+        self.session.set_peer_id(lt.big_number("kyletemporarypeerid"))             # temporarily hardcoding the peer id
         self.session.listen_on(self.to_port, self.from_port)
         self.session.set_upload_rate_limit(self.max_upload)
         self.session.set_download_rate_limit(self.max_download)
+        self._configure_session_settings()
+        
+    def _configure_session_settings(self):
+        """
+        Configure session settings.  More can be added later...
+        """
+        settings = self.session.settings()
+        settings.ignore_limits_on_local_network = False
+        self.session.set_settings(settings)
         
         
     def serve(self, ti):
