@@ -5,22 +5,35 @@ import urllib
 import uuid
 import socket
 import json
+from optparse import OptionParser
 
 from client.settingsmanager import settings
 
-def getlogininfo():
-    # YES - Hardcoded for now :)
-    return ("2", "password")
-
 def main():
-    # uses settings.txt for now as settings for this module.
+    # grab the userid and password 
+    parser = OptionParser()
+    parser.add_option("-u", "--user",
+                      action="store",
+                      type="string",
+                      dest="userid",
+                      help="specify the userid"
+                      )
+    parser.add_option("-p", "--password",
+                      dest="password",
+                      action="store",
+                      type="string",
+                      help="specify the users password")
+    
+    (options, args) = parser.parse_args()
 
-    # settings is defined from settingsmanager
-    
-#    settings = settingsmanager.Settings()
-    
-    # check that all the neccessary things are there
-    user, password = getlogininfo()
+    userid = options.userid
+    password = options.password
+
+    if (userid == None or password == None):
+        print "You must supply a id and password"
+        return
+    else:
+        print "User;%s"
 
     # check if settings already has a GUID
     if not (settings[".guid"] == None or settings[".publickey"] == None):
@@ -31,10 +44,6 @@ def main():
     if not (settings[".managerhost"] and settings[".registerurl"]):
         raise Exception("missing .managerhost or .registerurl")
         
-    # no GUID, then send info to tracker and
-    print "managerhost = %s" % settings[".managerhost"]
-    print "registerurl = %s" % settings[".registerurl"]
-    
     try:      
         HTTPConnection = httplib.HTTPConnection(settings[".managerhost"])
         URL = settings[".registerurl"]
@@ -47,28 +56,33 @@ def main():
         sockinfo = socket.gethostbyname_ex(socket.gethostname() )
         ipaddr = sockinfo[2][0]
         hostname = sockinfo[0]
-        params = urllib.urlencode( {'user': user,'password':password, 'macaddr':macaddr, 'ipaddr':ipaddr, 'hostname':hostname} )
+        params = urllib.urlencode( {'userid': userid,
+                                    'password':password,
+                                    'macaddr':macaddr,
+                                    'ipaddr':ipaddr,
+                                    'hostname':hostname}
+                                 )
         
         headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
         HTTPConnection.request("POST", URL, params, headers)
         response = HTTPConnection.getresponse()
-    
+
         HTTPresponse = response.read()
-    
+
         if response.status != 200:
-            print HTTPresponse
-            raise Exception("non 200 error on POST %s " % response.status)
+            print "Login failed for id = %s - %s, %s " % (userid, response.status, HTTPresponse)
     
-        # so we should have gotten something back that was JSON, let's try to decode it.
-        jsonresponse = json.loads(HTTPresponse)
-    
-        # if we get this far w/o and exception, it must be ok?
-        print "public key is %s " % (jsonresponse['publickey'])
-        print "guid is %s" % (jsonresponse['guid'])
+        else:
+            # so we should have gotten something back that was JSON, let's try to decode it.
+            jsonresponse = json.loads(HTTPresponse)
         
-        # update our settings file
-        settings['.guid'] = jsonresponse['guid']
-        settings['.publickey'] = jsonresponse['publickey']
+            # if we get this far w/o and exception, it must be ok?
+            print "public key is %s " % (jsonresponse['publickey'])
+            print "guid is %s" % (jsonresponse['guid'])
+            
+            # update our settings file
+            settings['.guid'] = jsonresponse['guid']
+            settings['.publickey'] = jsonresponse['publickey']
     except socket.error:
         print "Error connecting to backup manager, is it running?"
 
