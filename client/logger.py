@@ -1,18 +1,22 @@
 import logging
 
+from client.settingsmanager import settings
+
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+loglevel = settings["log_level"] or 50 
+log.setLevel(int(loglevel))
 
 fm = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
 
-fl=logging.FileHandler("z.log", mode="w")
+file_location = settings["log_file"] or "./"
+fl=logging.FileHandler("%s/client.log" % file_location, mode="w")
 fl.setFormatter(fm)
-fl.setLevel(logging.DEBUG)
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-ch.setFormatter(fm)
-
 log.addHandler(fl)
-log.addHandler(ch)
+
+if settings['log_stream']:
+    ch = logging.StreamHandler()
+    ch.setFormatter(fm)
+    log.addHandler(ch)
+
+
 log.info("Logging Started")
