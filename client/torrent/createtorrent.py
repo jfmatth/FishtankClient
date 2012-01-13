@@ -1,4 +1,4 @@
-import libtorrent as lt
+from client.libtorrent import libtorrent as lt
 import logging
 import os
 from torrentmetainfo import TorrentMetaInfo

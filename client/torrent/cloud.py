@@ -65,12 +65,8 @@ data
 """
 
 import os
-#import sys
-import logging
-#import socket
-#import libtorrent as lt
-#import httplib, urllib2, mimetypes
-
+import logging # replaced with logger import below
+from client.logger import log
 from tracker import Tracker
 from torrentmetainfo import TorrentMetaInfo
 from session import Session
@@ -78,16 +74,16 @@ from createtorrent import CreateTorrent
 import anydbm
 
 # setup 'ma logging
-DEBUG_LVL = logging.DEBUG
+#DEBUG_LVL = logging.DEBUG
 
-logging.basicConfig(level=DEBUG_LVL)
-h = logging.StreamHandler()
-f = logging.Formatter("%(levelname)s %(funcName)s %(lineno)d")
-h.setFormatter(f)
+#logging.basicConfig(level=DEBUG_LVL)
+#h = logging.StreamHandler()
+#f = logging.Formatter("%(levelname)s %(funcName)s %(lineno)d")
+#h.setFormatter(f)
 
-log = logging.getLogger("cloud.py")
-log.addHandler(h)
-log.setLevel(DEBUG_LVL)
+#log = logging.getLogger("cloud.py")
+#log.addHandler(h)
+#log.setLevel(DEBUG_LVL)
 
 
 
@@ -292,7 +288,7 @@ class Cloud(object):
         Start the cloud from a saved state
         """
         
-        if self.serving_files():
+        if self.serving():
             log.debug("Cloud already started.")
             return False
         
@@ -327,7 +323,7 @@ class Cloud(object):
             log.debug("Nothing in the database to serve.")
             return False
     
-    def serving_files(self):
+    def serving(self):
         """
         Tells us if the cloud is serving any files.
         """

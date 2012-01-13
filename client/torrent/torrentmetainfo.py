@@ -1,6 +1,6 @@
 import os
 import logging
-import libtorrent as lt
+from client.libtorrent import libtorrent as lt
 
 # setup 'ma logging
 log = logging.getLogger("cloud.torrentmetainfo")
