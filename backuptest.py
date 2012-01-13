@@ -85,6 +85,7 @@ if b.backupcount > 0:
 
 	# so the file is encrypted and uploaded, now put it in the cloud.
 	if settings["tracker_ip"] == None:
+		log.critical("no tracker_ip in settings - FAIL")
 		raise Exception("No tracker_ip in settings, sorry")
 
 	c = cloud.Cloud(tracker_ip=settings["tracker_ip"],

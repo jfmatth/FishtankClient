@@ -106,7 +106,7 @@ class Backup(object):
 
         log.debug("Backup starting..")
         for currdir in self.drives:
-            log.info("backing up %s" % currdir)
+            log.debug("backing up %s" % currdir)
             for root, dirs, files in os.walk(currdir):
                 for f in files:
                     fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) # c:/dir/dir/filename
