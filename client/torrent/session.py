@@ -1,4 +1,5 @@
-from libtorrent import libtorrent as lt
+from client.libtorrent import libtorrent as lt
+from client.settingsmanager import settings
 import glob
 import os
 import time
@@ -128,7 +129,8 @@ class Session(object):
         rates, etc.
         """
         self.session = lt.session()
-        self.session.set_peer_id(lt.big_number("kyletemporarypeerid"))             # temporarily hardcoding the peer id
+        peerid = settings["_peerid"]
+        self.session.set_peer_id(lt.big_number(peerid))
         self.session.listen_on(self.to_port, self.from_port)
         self.session.set_upload_rate_limit(self.max_upload)
         self.session.set_download_rate_limit(self.max_download)
