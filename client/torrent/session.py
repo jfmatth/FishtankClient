@@ -10,7 +10,9 @@ from torrentmetainfo import TorrentMetaInfo
 #from settingsmanager import *
 
 # setup 'ma logging
-log = logging.getLogger("cloud.session")
+#log = logging.getLogger("cloud.session")
+
+from client.logger import log
 
 class Session(object):
     """

@@ -1,9 +1,10 @@
 import os
-import logging
+#import logging
+from client.logger import log
 from client.libtorrent import libtorrent as lt
 
 # setup 'ma logging
-log = logging.getLogger("cloud.torrentmetainfo")
+#log = logging.getLogger("cloud.torrentmetainfo")
 
 class TorrentMetaInfo(object):
     """
@@ -11,7 +12,12 @@ class TorrentMetaInfo(object):
     to the Torrent class.
     """
     
-    def __init__(self, torr_save_path, file_save_path, tracker, backup_file = None, torr_file = None):
+    def __init__(self, 
+                 torr_save_path, 
+                 file_save_path, 
+                 tracker, 
+                 backup_file = None, 
+                 torr_file = None):
         """
         You must define a path where the torrent is saved, where the data files are saved, a tracker,
         and an optional torrent file.  The torrent file is given if we are getting files from the

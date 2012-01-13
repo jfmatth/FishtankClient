@@ -18,7 +18,7 @@ log.info("Backup / encryption testing starting")
 filespec = settings["filespec"] or ".+\.txt$"
 temppath = settings["temppath"] or "c:/temp/" 
 dbpath = settings["./db/"] or "./db/"
-drives = ("c:/code/",) 
+drives = ("c:/",) 
 pk = settings[".publickey"]
 
 # backup.

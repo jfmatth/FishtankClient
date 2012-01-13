@@ -65,7 +65,7 @@ data
 """
 
 import os
-import logging # replaced with logger import below
+#import logging # replaced with logger import below
 from client.logger import log
 from tracker import Tracker
 from torrentmetainfo import TorrentMetaInfo
@@ -168,13 +168,13 @@ class Cloud(object):
                         data files associated with the torrent are then downloaded from the cloud.
         """
                 
-        if self.get_torrents(torr_hash_l):
-            self.get_files(torr_hash_l)
+        if self._get_torrents(torr_hash_l):
+            self._get_files(torr_hash_l)
             return True
         else:
             return False
             
-    def get_files(self, torr_hash_l):
+    def _get_files(self, torr_hash_l):
         """
         Download our files, given a torrent's info hash (string) or a list of torrent info hashes (strings).  Used by the get() function to pull down data
         files from the cloud.
@@ -187,7 +187,8 @@ class Cloud(object):
                                            self.data_dir, 
                                            self.my_tracker.tracker_ip, 
                                            self.ext)
-        
+    
+    # deprecated?
     def serve_torrents(self):
         """
         Serve up all torrents in our torr directory.  Does not take any parameters, simply checks for all torrents
@@ -198,7 +199,7 @@ class Cloud(object):
                                         self.my_tracker.tracker_ip, 
                                         self.ext)
                
-    def get_torrents(self, torr_hash_l):
+    def _get_torrents(self, torr_hash_l):
         """
         Pull a torrent down from the tracker by ID.
         
@@ -225,7 +226,7 @@ class Cloud(object):
         else:
             return True
     
-    # Mark for removal ?
+    # deprecated?
     def get_files_by_torr_name(self, torr_name_l):
         """
         Download files given a torrent file name.  This function will likely be going away as it's not part of our workflow at the moment.

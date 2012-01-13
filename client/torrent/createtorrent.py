@@ -4,7 +4,9 @@ import os
 from torrentmetainfo import TorrentMetaInfo
 
 # setup 'ma logging
-log = logging.getLogger("cloud.createtorrent")
+#log = logging.getLogger("cloud.createtorrent")
+
+from client.logger import log
 
 class CreateTorrent(object):
     """
