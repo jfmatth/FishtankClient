@@ -97,6 +97,19 @@ class Session(object):
         self.max_upload = max_upload
         
         
+    def add_suffix(self, val):
+        prefix = ['B', 'kB', 'MB', 'GB', 'TB']
+        for i in range(len(prefix)):
+            if abs(val) < 1000:
+                if i == 0:
+                    return '%5.3g%s' % (val, prefix[i])
+                else:
+                    return '%4.3g%s' % (val, prefix[i])
+            val /= 1000
+    
+        return '%6.3gPB' % val
+
+        
     # needs work...
     def friendly_numbers(self, number):
         """
@@ -200,8 +213,8 @@ class Session(object):
                 out = '%s ' % handle.get_torrent_info().name()[:40] + ' '
                 out += '%s ' % states[torr_status.state] + ' '
                 out += '%2.0f%% ' % (torr_status.progress * 100) + ' '
-                out += 'download %s/s (%s)' % (self.friendly_numbers(torr_status.download_rate), 
-                                               self.friendly_numbers(torr_status.total_download))
+                out += 'download %s/s (%s)' % (self.add_suffix(torr_status.download_rate), 
+                                               self.add_suffix(torr_status.total_download))
                 log.debug(out)
                 time.sleep(1)
                 
