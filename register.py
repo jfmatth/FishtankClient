@@ -9,40 +9,19 @@ from optparse import OptionParser
 
 from client.settingsmanager import settings
 
-def main():
-    # grab the userid and password 
-    parser = OptionParser()
-    parser.add_option("-u", "--user",
-                      action="store",
-                      type="string",
-                      dest="userid",
-                      help="specify the userid"
-                      )
-    parser.add_option("-p", "--password",
-                      dest="password",
-                      action="store",
-                      type="string",
-                      help="specify the users password")
-    
-    (options, args) = parser.parse_args()
+class Registration(Exception):
+    pass
 
-    userid = options.userid
-    password = options.password
+def register(userid=None, 
+             password=None
+             ):
 
     if (userid == None or password == None):
-        print "You must supply a id and password"
-        return
-    else:
-        print "User;%s"
+        raise Registration("You must supply a id and password")
 
-    # check if settings already has a GUID
-    if not (settings[".guid"] == None or settings[".publickey"] == None):
-        print "We are already registered"
-        return
-    
     # make sure we have the minimum settings we need to register
     if not (settings[".managerhost"] and settings[".registerurl"]):
-        raise Exception("missing .managerhost or .registerurl")
+        raise Registration("missing .managerhost or .registerurl")
         
     try:      
         HTTPConnection = httplib.HTTPConnection(settings[".managerhost"])
@@ -87,5 +66,21 @@ def main():
         print "Error connecting to backup manager, is it running?"
 
 if __name__ == "__main__":
-    main()
+    # grab the userid and password 
+    parser = OptionParser()
+    parser.add_option("-u", "--user",
+                      action="store",
+                      type="string",
+                      dest="userid",
+                      help="specify the userid"
+                      )
+    parser.add_option("-p", "--password",
+                      dest="password",
+                      action="store",
+                      type="string",
+                      help="specify the users password")
+    
+    (options, args) = parser.parse_args()
+
+    register(options.userid, options.password)
     
