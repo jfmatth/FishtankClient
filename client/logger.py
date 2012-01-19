@@ -8,7 +8,7 @@ log.setLevel(int(loglevel))
 
 fm = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
 
-file_location = settings["log_file"] or "./"
+file_location = settings["log_path"] or "./"
 fl=logging.FileHandler("%s/client.log" % file_location, mode="w")
 fl.setFormatter(fm)
 log.addHandler(fl)

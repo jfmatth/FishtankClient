@@ -10,16 +10,32 @@ from client.torrent import cloud
 import uuid
 import urllib
 import os
-	
+
 # backup all .txt files from c:/program files/
 log.info("Backup / encryption testing starting")
 
 # settings for our environment
+log.info("getting settings for backup")
+
 filespec = settings["filespec"] or ".+\.txt$"
-temppath = settings["temppath"] or "c:/temp/" 
-dbpath = settings["./db/"] or "./db/"
-drives = ("c:/",) 
+
+log.info("filespec = %s" % filespec)
+
+temppath = settings["temppath"] or "c:/temp/"
+log.info("temppath = %s" % temppath)
+
+dbpath = settings["dbpath"] or "./db/"
+log.info("dbpath = %s" % dbpath)
+
+
+if not settings["backupdrives"]==None:
+	drives = settings["backupdrives"].split(",")
+else:
+	drives = ("c:/",)
+log.info("drives = %s" % drives)
+
 pk = settings[".publickey"]
+log.info("public key = %s" % pk)
 
 # backup.
 log.info("backing up...")
@@ -37,6 +53,7 @@ if b.backupcount > 0:
 	pathout = settings["cloud_files"]
 	if pathout == None:
 		raise Exception("No cloud_files setting")
+	log.info("cloud_files = %s" % pathout)
 
 	fi = b.zipfilename
 	fo = os.path.join(pathout,os.path.basename(b.tempfile.name + ".enc") )
@@ -69,8 +86,9 @@ if b.backupcount > 0:
 
 	# so the file is encrypted and uploaded, now put it in the cloud.
 	if settings["tracker_ip"] == None:
+		log.critical("no tracker_ip in settings - FAIL")
 		raise Exception("No tracker_ip in settings, sorry")
-	
+
 	c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
 				    torr_dir = settings["cloud_meta"],
 				    data_dir = settings["cloud_files"],
