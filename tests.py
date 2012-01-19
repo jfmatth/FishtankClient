@@ -1,7 +1,7 @@
 import unittest
 
 from client.settingsmanager import settings
-import register
+from register import register, RegistrationError
 
 class testSettings(unittest.TestCase):
     
@@ -25,7 +25,7 @@ class testSettings(unittest.TestCase):
     
 class testRegister(unittest.TestCase):
     def testParameters(self):
-        self.assertRaises(register.Registration, register.register())
+        self.failUnlessRaises(RegistrationError, register())
 
     
 if __name__ == "__main__":

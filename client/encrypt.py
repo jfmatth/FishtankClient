@@ -4,7 +4,7 @@ Encrypts files
 """
 
 from client import simplecrypt
-from client.Crypto.PublicKey import RSA
+from Crypto.PublicKey import RSA
 
 from client.settingsmanager import settings
 

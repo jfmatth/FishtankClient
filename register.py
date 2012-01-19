@@ -9,7 +9,7 @@ from optparse import OptionParser
 
 from client.settingsmanager import settings
 
-class Registration(Exception):
+class RegistrationError(Exception):
     pass
 
 def register(userid=None, 
@@ -17,11 +17,11 @@ def register(userid=None,
              ):
 
     if (userid == None or password == None):
-        raise Registration("You must supply a id and password")
+        raise RegistrationError("You must supply a id and password")
 
     # make sure we have the minimum settings we need to register
     if not (settings[".managerhost"] and settings[".registerurl"]):
-        raise Registration("missing .managerhost or .registerurl")
+        raise RegistrationError("missing .managerhost or .registerurl")
         
     try:      
         HTTPConnection = httplib.HTTPConnection(settings[".managerhost"])
