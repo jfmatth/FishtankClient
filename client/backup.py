@@ -1,14 +1,10 @@
 """
-    Backup() will backup all files specified by filespec and drives.  The system will scan for changes to 
-            files and zip them up and keep a record of them in a DBM file.
-            
-            At the end of the Backup.execute() command, two attributes should be accessed:
-            
-                Backup.Backupfile - a zip file containing all backed up files.
-                Backup.BackupDB   - a DBM database of files and their fileinfo.
-                
-            
-        
+Backup() will backup all files specified by filespec and drives.  The system will scan for changes to 
+files and zip them up and keep a record of them in a DBM file.
+
+At the end of the backup.execute(), two files should be retrieved:
+  .zipfilename - full pathname to the .zip file that contains all the files
+  .diffdbname  - full pathname to the .dbm file that indexes all the files.
 """
 
 import zlib
@@ -21,6 +17,7 @@ import anydbm
 import zipfile
 import re
 
+from client.logger import log
 
 class Backup(object):
     
@@ -71,7 +68,7 @@ class Backup(object):
         """ returns a dict of all the file information we want of a file """
         fi = {}
         fs = os.stat(filename)
-    
+
         fi['crc'] = self.crcval(filename)
         fi['filename'] = filename
         fi['size'] = fs[stat.ST_SIZE]
@@ -81,16 +78,11 @@ class Backup(object):
         
         return fi
 
-
-
     def crcval(self, fileName):
         prev = 0
         for eachLine in open(fileName,"rb"):
             prev = zlib.crc32(eachLine, prev)
         return "%X"%(prev & 0xFFFFFFFF)
-
-
- 
     
     def _backupfiles(self):
         """
@@ -112,8 +104,9 @@ class Backup(object):
         if not dbfull.isOpen():
             return
 
+        log.debug("Backup starting..")
         for currdir in self.drives:
-            print "backing up %s" % currdir
+            log.debug("backing up %s" % currdir)
             for root, dirs, files in os.walk(currdir):
                 for f in files:
                     fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) # c:/dir/dir/filename
@@ -123,24 +116,20 @@ class Backup(object):
                             
                             # figure out what we need to do with it.
                             if not dbfull.has_key(fullpath):
-                                print "Adding %s" % fullpath,
+                                log.debug("Adding %s" % fullpath)
                                 sfinfo = json.dumps(finfo)
                                 dbfull[fullpath] = sfinfo
                                 dbdiff[fullpath] = sfinfo
                                 thezip.write(fullpath)
-                                print "..Done!"
                             else:
-                                print "Checking %s" % fullpath,
                                 if not json.loads(dbfull[fullpath])['crc'] == finfo['crc']:
-                                    print "..updating",
+                                    log.debug("refreshing %s" % fullpath)
                                     sfinfo = json.dumps(finfo)
                                     dbfull[fullpath] = sfinfo
                                     dbdiff[fullpath] = sfinfo
                                     thezip.write(fullpath)
-                                    
-                                print "..Done!"
                     except Exception as e:
-                        print "%s Exception on %s" % (e, fullpath)
+                        log.critical("%s Exception on %s" % (e, fullpath) )
 
             # we only do this once, so close all the files when we are done.
             self.backupcount = len(dbdiff)
@@ -148,5 +137,7 @@ class Backup(object):
             dbfull.close()
             dbdiff.close()
        
+            log.info("Backup completed, %s files backed up" % self.backupcount)
+	   
     def execute(self):
         self._backupfiles()

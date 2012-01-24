@@ -5,14 +5,20 @@ import logging
 import os
 
 # setup 'ma logging
-log = logging.getLogger("cloud.tracker")
+#log = logging.getLogger("cloud.tracker")
+
+from client.logger import log
 
 class Tracker(object):
     """
     The tracker class is responsible for talking to the real Tracker.
     """
     
-    def __init__(self, tracker="10.0.0.1:8000", announce_url="/backup/announce", check_url="/backup/check/?info_hash=", upload_url="/backup/upload/", download_url="/backup/download/"):
+    def __init__(self, tracker="10.0.0.1:8000", 
+                 announce_url="/backup/announce?guid=", 
+                 check_url="/backup/check/?info_hash=", 
+                 upload_url="/backup/upload/", 
+                 download_url="/backup/download/"):
         """
         
         Parameters
@@ -128,7 +134,7 @@ class Tracker(object):
         # Setup our POST values
         fields = self.post_fields
         files = [(self.post_file_path, os.path.basename(ti.torr_name), open(ti.torr_name, "rb").read())]
-                
+                    
         content_type, body = self.encode_multipart_formdata(fields, files)
         headers = {'Content-Type': content_type }
         r = urllib2.Request("http://%s%s" % (self.tracker_ip, self.upload_url), body, headers)

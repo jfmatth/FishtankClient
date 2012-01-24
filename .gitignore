@@ -10,3 +10,4 @@ misc/pycrypto
 *.fastresume
 mycache
 *.db
+*.log

@@ -9,8 +9,10 @@ print x["mysetting"]
 
 x["mysetting"] = "blah blah blah"
 
-if <key> starts with "setting." then that value will be written to the local
+if <key> starts with "." then that value will be written to the local
 "settings" file (default is settings.txt)
+
+if <key> starts with #, thats special on the server.
 
 """
 
@@ -98,6 +100,9 @@ class Manager(object):
         
         # URLSettings is none to start in case we don't have enough to bootstrap.
         self.URLSettings = None
+        if self._urlcheck():
+            self._urldict()
+            self._refresh()
 
     def __del__(self):
         # before we die, save our settings file
@@ -134,7 +139,7 @@ class Manager(object):
                 self.URLSettings = URLDict( self['.managerhost'],
                                             self['.settingurl'],
                                             self['.guid'])
-                self._refresh()
+#                self._refresh()
                 return self.URLSettings
             else:
                 raise Exception("Not enough settings for URL connection to manager")

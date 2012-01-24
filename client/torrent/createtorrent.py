@@ -1,10 +1,12 @@
-import libtorrent as lt
+from client.libtorrent import libtorrent as lt
 import logging
 import os
 from torrentmetainfo import TorrentMetaInfo
 
 # setup 'ma logging
-log = logging.getLogger("cloud.createtorrent")
+#log = logging.getLogger("cloud.createtorrent")
+
+from client.logger import log
 
 class CreateTorrent(object):
     """
@@ -47,7 +49,7 @@ class CreateTorrent(object):
         # Create the torrent
         try:
             torr = lt.create_torrent(file_st, self.ti.piece_size)
-            torr.add_tracker("http://" + tracker_ip.tracker_ip + tracker_ip.announce_url)
+            torr.add_tracker("http://" + tracker_ip.tracker_ip + tracker_ip.announce_url + self.ti.guid)
             torr.set_comment(self.ti.comments)
             torr.set_creator(self.ti.creator)
             lt.set_piece_hashes(torr, os.path.dirname(self.ti.file_name))
