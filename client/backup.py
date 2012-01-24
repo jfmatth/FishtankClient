@@ -32,7 +32,7 @@ class Backup(object):
 # need to clean up the init section and how i open files, etc, move to _backupfiles method?
 
         # error checking
-        if not type(drives) == tuple:
+        if not type(drives) == list:
             raise Exception("drives parameter needs to be a tuple")
         
         self.filespec = filespec    # file regular expression of what files to backup.
@@ -44,8 +44,13 @@ class Backup(object):
         # point for the zip and diff db names.
         self.tempfile = tempfile.TemporaryFile(dir=self.workingpath)
         self.zipfilename = self.tempfile.name + ".zip"
+        log.debug("zipfilename %s"%self.zipfilename)
+        
         self.diffdbname = os.path.join(self.dbpath, self.tempfile.name + ".db")
+        log.debug("diffdbname %s"%self.diffdbname)
+        
         self.fulldbname = os.path.join(self.dbpath, "dbfull.db")
+        log.debug("fulldbname %s"%self.fulldbname)
         
         # our actuall storage.
         self.zipfile = zipfile.ZipFile(self.zipfilename, "w", compression=zipfile.ZIP_DEFLATED)
@@ -93,7 +98,6 @@ class Backup(object):
         At the end of execute(), you should have an updated full DB and a diffdb with all files that are in the
         zip file.
         """
-
        
         # local pointers to class variables.
         dbfull = self.dbfull
@@ -106,38 +110,39 @@ class Backup(object):
 
         log.debug("Backup starting..")
         for currdir in self.drives:
-            log.debug("backing up %s" % currdir)
-            for root, dirs, files in os.walk(currdir):
-                for f in files:
-                    fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) # c:/dir/dir/filename
-                    try:
-                        if os.path.isfile(fullpath) and regex.match(fullpath):
-                            finfo = self.fileinfo(fullpath)
-                            
-                            # figure out what we need to do with it.
-                            if not dbfull.has_key(fullpath):
-                                log.debug("Adding %s" % fullpath)
-                                sfinfo = json.dumps(finfo)
-                                dbfull[fullpath] = sfinfo
-                                dbdiff[fullpath] = sfinfo
-                                thezip.write(fullpath)
-                            else:
-                                if not json.loads(dbfull[fullpath])['crc'] == finfo['crc']:
-                                    log.debug("refreshing %s" % fullpath)
+            if len(currdir) != 0:
+                log.debug("backing up %s" % currdir)
+                for root, dirs, files in os.walk(currdir):
+                    for f in files:
+                        fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) # c:/dir/dir/filename
+                        try:
+                            if os.path.isfile(fullpath) and regex.match(fullpath):
+                                finfo = self.fileinfo(fullpath)
+                                
+                                # figure out what we need to do with it.
+                                if not dbfull.has_key(fullpath):
+                                    log.debug("Adding %s" % fullpath)
                                     sfinfo = json.dumps(finfo)
                                     dbfull[fullpath] = sfinfo
                                     dbdiff[fullpath] = sfinfo
                                     thezip.write(fullpath)
-                    except Exception as e:
-                        log.critical("%s Exception on %s" % (e, fullpath) )
+                                else:
+                                    if not json.loads(dbfull[fullpath])['crc'] == finfo['crc']:
+                                        log.debug("refreshing %s" % fullpath)
+                                        sfinfo = json.dumps(finfo)
+                                        dbfull[fullpath] = sfinfo
+                                        dbdiff[fullpath] = sfinfo
+                                        thezip.write(fullpath)
+                        except Exception as e:
+                            log.critical("%s Exception on %s" % (e, fullpath) )
 
-            # we only do this once, so close all the files when we are done.
-            self.backupcount = len(dbdiff)
-            thezip.close()
-            dbfull.close()
-            dbdiff.close()
+        # we only do this once, so close all the files when we are done.
+        self.backupcount = len(dbdiff)
+        thezip.close()
+        dbfull.close()
+        dbdiff.close()
        
-            log.info("Backup completed, %s files backed up" % self.backupcount)
-	   
+        log.info("Backup completed, %s files backed up" % self.backupcount)
+
     def execute(self):
         self._backupfiles()

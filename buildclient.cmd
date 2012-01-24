@@ -4,7 +4,7 @@
 	::
 	:: %1 is our desination folder for client.exe
 	set destzip=%temp%\client%random%.7z
-	set defdest=C:\torrentserver\mserver\
+	set defdest=..\fishtankserver\
 	::
 	:: check for 7-zip
 	IF NOT EXIST "C:\program files\7-zip\." ECHO "NO 7-zip" & GOTO :eof
@@ -29,12 +29,22 @@
 	CALL :copysettings
 ::	CALL :copylibtorrent
 	CALL :copyvc
-		
+	CALL :copymisc
+
 	copy /b %sfx% + %destzip% %exe% > nul
 	IF NOT EXIST %exe% ECHO ERROR copying %exe% & GOTO :eof
 	dir %exe%
 	
 	erase %destzip%
+	
+	GOTO :eof
+
+:copymisc
+	:: copies folders we need to work
+	ECHO misc directories...
+	%zip% a %destzip% cloud\readme > nul
+	%zip% a %destzip% log\readme > nul
+	%zip% a %destzip% db\readme > nul
 	
 	GOTO :eof
 

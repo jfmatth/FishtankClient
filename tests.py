@@ -19,6 +19,8 @@ class testSettings(unittest.TestCase):
         self.assertFalse(settings["cloud_files"] == None, "setting cloud_files missing")
         self.assertFalse(settings["cloud_meta"] == None, "setting cloud_meta missing")
         self.assertFalse(settings["tracker_ip"] == None, "setting tracker_ip missing")
+        self.assertFalse(settings["max_free_perc"] == None, "max_free_perc missing")
+        self.assertFalse(settings["min_free_gb"] == None, "min_free_gb missing")
     
     def testPutandGet(self):
         pass    
