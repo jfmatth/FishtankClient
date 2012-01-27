@@ -2,6 +2,7 @@
 *.sq3
 .project
 .pydevproject
+.settings
 *.torrent
 settings.*
 *.torrent
@@ -11,3 +12,4 @@ misc/pycrypto
 mycache
 *.db
 *.log
+cloud/*.enc
