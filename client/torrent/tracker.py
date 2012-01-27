@@ -15,7 +15,7 @@ class Tracker(object):
     """
     
     def __init__(self, tracker="10.0.0.1:8000", 
-                 announce_url="/backup/announce?guid=", 
+                 announce_url="/backup/announce", 
                  check_url="/backup/check/?info_hash=", 
                  upload_url="/backup/upload/", 
                  download_url="/backup/download/"):
