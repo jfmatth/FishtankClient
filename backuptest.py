@@ -156,9 +156,11 @@ if __name__ == "__main__":
 		raise Exception("min_free_gb missing")
 	
 	# start up the cloud
+	print "Starting the cloud"
 	c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
 					torr_dir = settings["cloud_meta"],
 				    data_dir = settings["cloud_files"],
+				    session_dir = settings["cloud_meta"]
 				    )
 	c.start()
 	
@@ -175,3 +177,5 @@ if __name__ == "__main__":
 		elif char=="g":
 			testgetcloud()
 
+#	c.stop() - No workie yet!
+	
