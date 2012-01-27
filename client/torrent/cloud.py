@@ -65,12 +65,13 @@ data
 """
 
 import os
-import logging # replaced with logger import below
+#import logging # replaced with logger import below
 from client.logger import log
 from tracker import Tracker
 from torrentmetainfo import TorrentMetaInfo
 from session import Session
 from createtorrent import CreateTorrent
+from client.settingsmanager import settings
 import anydbm
 
 # setup 'ma logging
@@ -102,7 +103,7 @@ class Cloud(object):
                  session_dir="c:/torrent", 
                  db_name="torrent.db", 
                  ext=".torrent",
-                 rate="med"):
+                 rate=None):
         """
         Initialize class.
         
@@ -142,7 +143,11 @@ class Cloud(object):
         log.debug("backup_file = %s, data_dir = %s, torr_dir = %s, tracker = %s" % (backup_file, self.data_dir, self.torr_dir, self.my_tracker.tracker_ip))        
         
         # setup our TorrentMetaInfo object and create a torrent
-        ti = TorrentMetaInfo(self.torr_dir, self.data_dir, self.my_tracker.tracker_ip, os.path.basename(backup_file))
+        ti = TorrentMetaInfo(self.torr_dir, 
+                             self.data_dir, 
+                             self.my_tracker.tracker_ip, 
+                             os.path.basename(backup_file),
+                             )
         
         # Make the torrent file and save new TorrentMetaInfo object with torrent name
         if ti.is_valid_create_object():        
@@ -168,13 +173,13 @@ class Cloud(object):
                         data files associated with the torrent are then downloaded from the cloud.
         """
                 
-        if self.get_torrents(torr_hash_l):
-            self.get_files(torr_hash_l)
+        if self._get_torrents(torr_hash_l):
+            self._get_files(torr_hash_l)
             return True
         else:
             return False
             
-    def get_files(self, torr_hash_l):
+    def _get_files(self, torr_hash_l):
         """
         Download our files, given a torrent's info hash (string) or a list of torrent info hashes (strings).  Used by the get() function to pull down data
         files from the cloud.
@@ -187,7 +192,8 @@ class Cloud(object):
                                            self.data_dir, 
                                            self.my_tracker.tracker_ip, 
                                            self.ext)
-        
+    
+    # deprecated?
     def serve_torrents(self):
         """
         Serve up all torrents in our torr directory.  Does not take any parameters, simply checks for all torrents
@@ -198,7 +204,7 @@ class Cloud(object):
                                         self.my_tracker.tracker_ip, 
                                         self.ext)
                
-    def get_torrents(self, torr_hash_l):
+    def _get_torrents(self, torr_hash_l):
         """
         Pull a torrent down from the tracker by ID.
         
@@ -225,7 +231,7 @@ class Cloud(object):
         else:
             return True
     
-    # Mark for removal ?
+    # deprecated?
     def get_files_by_torr_name(self, torr_name_l):
         """
         Download files given a torrent file name.  This function will likely be going away as it's not part of our workflow at the moment.
@@ -323,7 +329,7 @@ class Cloud(object):
             log.debug("Nothing in the database to serve.")
             return False
     
-    def serving(self):
+    def is_serving(self):
         """
         Tells us if the cloud is serving any files.
         """
@@ -331,6 +337,12 @@ class Cloud(object):
             return True
         else:
             return False
+        
+    def serving(self):
+        """
+        return a list of torrents we're currently serving
+        """
+        pass
     
     
     ###########################################

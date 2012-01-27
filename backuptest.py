@@ -118,17 +118,18 @@ def testgetcloud():
 													   'guid': settings[".guid"] 
 													  }
 													)
-	
+
 	HTTPConnection.request("GET", URL)
 	response = HTTPConnection.getresponse()
 	
 	if response.status != 200:
 		print "Error"
 	else:
-		print response.read()
-		print
-		
+		ih = response.read()
 
+		# get it from the cloud()
+		print "asking for %s" % ih
+		c.get(ih)		
 
 if __name__ == "__main__":
 	# make sure we have the necessary settings

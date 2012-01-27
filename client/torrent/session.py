@@ -10,7 +10,9 @@ from torrentmetainfo import TorrentMetaInfo
 #from settingsmanager import *
 
 # setup 'ma logging
-log = logging.getLogger("cloud.session")
+#log = logging.getLogger("cloud.session")
+
+from client.logger import log
 
 class Session(object):
     """
@@ -53,24 +55,24 @@ class Session(object):
         if not self.callback:
             raise Exception("Callback not specified.")
         
-    def configure_rates(self, rate):
+    def configure_rates(self, rate="med"):
         """
         Set our max upload and download rates.
         """
         
-        if rate == "unlimited":
-            self.max_download = 0
-            self.max_upload = 0
-        elif rate == "high":
+        if rate == "high":
             self.max_download = 2**30
             self.max_upload = 2**30
+        elif rate == "med":
+            self.max_download = 2**20
+            self.max_upload = 2**20
         elif rate == "low":
-            self.max_download = 2** 12
-            self.max_upload = 2 ** 12
+            self.max_download = 2** 15
+            self.max_upload = 2 ** 15
         else:
-            # "med" is the default
-            self.max_download = 2**15
-            self.max_upload = 2**15
+            # Unlimited is the default!
+            self.max_download = 0
+            self.max_upload = 0
         
         # if the session already exists, just change it on the fly...
         if self.session:
@@ -94,6 +96,19 @@ class Session(object):
     def _set_max_upload(self, max_upload):
         self.max_upload = max_upload
         
+        
+    def add_suffix(self, val):
+        prefix = ['B', 'kB', 'MB', 'GB', 'TB']
+        for i in range(len(prefix)):
+            if abs(val) < 1000:
+                if i == 0:
+                    return '%5.3g%s' % (val, prefix[i])
+                else:
+                    return '%4.3g%s' % (val, prefix[i])
+            val /= 1000
+    
+        return '%6.3gPB' % val
+
         
     # needs work...
     def friendly_numbers(self, number):
@@ -144,7 +159,7 @@ class Session(object):
         settings.ignore_limits_on_local_network = False
         self.session.set_settings(settings)
         
-        
+
     def serve(self, ti):
         """
         Create session.  Add torrent to session if it doesn't already exist.
@@ -198,8 +213,8 @@ class Session(object):
                 out = '%s ' % handle.get_torrent_info().name()[:40] + ' '
                 out += '%s ' % states[torr_status.state] + ' '
                 out += '%2.0f%% ' % (torr_status.progress * 100) + ' '
-                out += 'download %s/s (%s)' % (self.friendly_numbers(torr_status.download_rate), 
-                                               self.friendly_numbers(torr_status.total_download))
+                out += 'download %s/s (%s)' % (self.add_suffix(torr_status.download_rate), 
+                                               self.add_suffix(torr_status.total_download))
                 log.debug(out)
                 time.sleep(1)
                 
