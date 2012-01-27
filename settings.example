@@ -1,0 +1,5 @@
+[settings]
+.registerurl = /manager/register/
+.managerhost = <ip:port>
+.settingurl = /manager/setting/
+

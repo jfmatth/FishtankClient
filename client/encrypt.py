@@ -8,6 +8,8 @@ from Crypto.PublicKey import RSA
 
 from client.settingsmanager import settings
 
+from client.settingsmanager import settings
+
 def EncryptAString(AString, PK):
     """
     Encrypts a string with the included public Key.  
