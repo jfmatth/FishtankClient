@@ -126,10 +126,12 @@ def testgetcloud():
 		print "Error"
 	else:
 		ih = response.read()
-
-		# get it from the cloud()
-		print "asking for %s" % ih
-		c.get(ih)		
+		if len(ih) > 0:
+			# get it from the cloud()
+			print "asking for %s" % ih
+			c.get(ih)
+		else:
+			print "Nothing to get"		
 
 if __name__ == "__main__":
 	# make sure we have the necessary settings
