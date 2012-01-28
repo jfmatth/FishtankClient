@@ -42,9 +42,9 @@
 :copymisc
 	:: copies folders we need to work
 	ECHO misc directories...
-	%zip% a %destzip% cloud\readme > nul
-	%zip% a %destzip% log\readme > nul
-	%zip% a %destzip% db\readme > nul
+	%zip% a %destzip% cloud\readme.txt > nul
+	%zip% a %destzip% log\readme.txt > nul
+	%zip% a %destzip% db\readme.txt > nul
 	
 	GOTO :eof
 

@@ -155,8 +155,9 @@ class Manager(object):
             else:
                 # it's a setting, check the local file and then put it in the DBM
                 if self.LocalSettings[key]:
-                    self.DBMSettings[key] = self.LocalSettings[key]
-                    return self.DBMSettings[key]
+#                    self.DBMSettings[key] = self.LocalSettings[key]
+#                    return self.DBMSettings[key]
+                    return self.LocalSettings[key]
                 else:
                     #if it's not in the local, then we don't have it.
                     return None

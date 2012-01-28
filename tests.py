@@ -25,9 +25,9 @@ class testSettings(unittest.TestCase):
     def testPutandGet(self):
         pass    
     
-class testRegister(unittest.TestCase):
-    def testParameters(self):
-        self.failUnlessRaises(RegistrationError, register())
+#class testRegister(unittest.TestCase):
+#    def testParameters(self):
+#        self.failUnlessRaises(RegistrationError, register())
 
     
 if __name__ == "__main__":
