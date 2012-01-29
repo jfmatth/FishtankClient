@@ -1,4 +1,0 @@
-[settings] 
-.registerurl = /manager/register/ 
-.settingurl = /manager/setting/ 
-.managerhost = 172.16.223.128:8000 
