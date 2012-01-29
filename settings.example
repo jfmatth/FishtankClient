@@ -1,5 +1,4 @@
-[settings]
-.registerurl = /manager/register/
-.managerhost = <ip:port>
-.settingurl = /manager/setting/
-
+[settings] 
+.registerurl = /manager/register/ 
+.settingurl = /manager/setting/ 
+.managerhost = 172.16.223.128:8000 

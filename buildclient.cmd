@@ -4,7 +4,7 @@
 	::
 	:: %1 is our desination folder for client.exe
 	set destzip=%temp%\client%random%.7z
-	set defdest=..\fishtankserver\
+	set defdest=..\fishtankserver\download
 	::
 	:: check for 7-zip
 	IF NOT EXIST "C:\program files\7-zip\." ECHO "NO 7-zip" & GOTO :eof
@@ -73,6 +73,10 @@
 :copysettings
 	ECHO Settings...
 	::COPY settings.txt %destdir% > nul
+    ECHO [settings] > settings.example
+    ECHO .registerurl = /manager/register/ >> settings.example
+    ECHO .settingurl = /manager/setting/ >> settings.example
+    FOR /F "tokens=1" %%i in ('python buildclient.py') do echo .managerhost = %%i >> settings.example
 	%zip% a %destzip% settings.example > nul
 
 	GOTO :eof
