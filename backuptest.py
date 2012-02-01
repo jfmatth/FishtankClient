@@ -12,6 +12,8 @@ import uuid
 import urllib
 import httplib
 import os
+import anydbm
+import json
 
 c = []
 
@@ -39,29 +41,32 @@ def testbackup():
 	log.info("drives = %s" % drives)
 	
 	pk = settings[".publickey"]
-	log.info("public key = %s" % pk)
 	
-	# backup.
+	cloudpath = settings["cloud_files"]
+	
+#	# backup.
 	log.info("backing up...")
-	b = backup.Backup(filespec, 
-					  temppath, 
-					  dbpath,
-					  drives)
-	
-	b.execute()
-	
-	if b.backupcount > 0:
-		# encrypt
-		# all stuff is backed up now. b has closed the files, but hasn't deleted them yet.
+#	b = backup.Backup(filespec, 
+#					  temppath, 
+#					  dbpath,
+#					  drives)
+#	
+#	b.execute()
+#	
+#	if b.backupcount > 0:
+
+	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives):
+
+		# we should be able to modularize this better, but it is somewhat critical section, 
+		# if any of the items below are interrupted, then the backup will be incomplete.
 		
-		#add the path to the cloud files
-		pathout = settings["cloud_files"]
-		
-		fi = b.zipfilename
-		fo = os.path.join(pathout,os.path.basename(b.tempfile.name + ".enc") )
+		log.debug("zf = %s, dbf = %s" % (zf, dbf) )
+				
+		fi = zf
+		fo = os.path.join(cloudpath,os.path.basename(zf) + "-e") 
 	
 		key = str(uuid.uuid4() )
-	
+
 		log.info("Encrypting %s to %s" % (fi, fo) )
 	
 		encrypt.EncryptAFile(filein=fi,fileout=fo,key=key)
@@ -70,34 +75,38 @@ def testbackup():
 		# delete our original file.
 		# encrypt the key and push to server?
 		ekey = "".join(encrypt.EncryptAString(key, pk))
-	
-		rawfilename = os.path.basename(b.diffdbname)
-	
+
+		rawfilename = os.path.basename(dbf)
+
 		# now push all this to the server
 		host = settings[".managerhost"]
 		url = "/manager/dbmupload/"
 		fields = [("eKey",urllib.quote(ekey)),("guid", settings[".guid"]) ]
-		files = [("dFile",rawfilename,open(b.diffdbname,"rb").read() )]
+		files = [("dFile",rawfilename,open(dbf,"rb").read() )]
 		
-		log.info("Uploading %s" % b.diffdbname)
+		log.info("Uploading %s" % dbf)
 		
 		status, reason, data = upload.httppost_multipart(host, url, fields, files)
-		log.info("Status response = %s" % status)
-		log.info("reason %s" % reason)
-		log.info(data)
 	
 		# so the file is encrypted and uploaded, now put it in the cloud.
-		if settings["tracker_ip"] == None:
-			log.critical("no tracker_ip in settings - FAIL")
-			raise Exception("No tracker_ip in settings, sorry")
-
 		log.info("Adding to cloud")
 		c.put(fo)
-	
-		del(b)
 
-	else:
-		log.info("No files backed up, oh well")
+		# now, update the dbfull database to show that the files are updated.
+		log.debug("Updating dbfull.db")
+		_dbfull = anydbm.open(os.path.join(dbpath, "dbfull.db"), "c") 
+		_dbdiff = anydbm.open(dbf)
+		for key in _dbdiff:
+			# if it's not there, or the CRC's are different, update the DBfull db.
+			if ( not _dbfull.has_key(key) ) or ( not json.loads(_dbfull[key])['crc'] == json.loads(_dbdiff[key])['crc'] ): 
+				_dbfull[key] = _dbdiff[key]
+
+		log.debug("done updating dbfull.db")
+		
+		_dbfull.close()
+		_dbdiff.close()
+		os.remove(dbf)
+		os.remove(zf)
 
 
 def testgetcloud():
@@ -136,6 +145,8 @@ def testgetcloud():
 if __name__ == "__main__":
 	# make sure we have the necessary settings
 
+
+	log.debug("Starting backuptest.py")
 	# validate all necessary settings first
 	if settings["block_sz"] == None:
 		raise Exception("setting block_sz missing")
@@ -165,6 +176,7 @@ if __name__ == "__main__":
 				    data_dir = settings["cloud_files"],
 				    session_dir = settings["cloud_meta"]
 				    )
+	log.debug("starting cloud")
 	c.start()
 	
 	char = ""
@@ -180,5 +192,9 @@ if __name__ == "__main__":
 		elif char=="g":
 			testgetcloud()
 
+	log.debug("deleting cloud")
+	del(c)
+
 #	c.stop() - No workie yet!
 	
+	log.debug("ending")

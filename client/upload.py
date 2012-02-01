@@ -1,5 +1,12 @@
 import httplib, mimetypes
 
+
+def encrypt_upload():
+    pass
+
+
+
+
 def httppost_multipart(host=None, url=None, fields=None, files=None):
     """
 	A function to post a file / fields to a HTTP server.
@@ -25,6 +32,7 @@ def httppost_multipart(host=None, url=None, fields=None, files=None):
         }
     h.request('POST', url, body, headers)
     res = h.getresponse()
+
     return res.status, res.reason, res.read()
 
 

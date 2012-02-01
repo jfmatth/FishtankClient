@@ -16,8 +16,123 @@ import json
 import anydbm
 import zipfile
 import re
+import uuid
+
 
 from client.logger import log
+
+def crcval(fileName):
+    prev = 0
+    for eachLine in open(fileName,"rb"):
+        prev = zlib.crc32(eachLine, prev)
+    return "%X"%(prev & 0xFFFFFFFF)
+
+
+
+def fileinfo(filename):
+    """ returns a dict of all the file information we want of a file """
+    fi = {}
+    fs = os.stat(filename)
+
+    fi['crc']      = crcval(filename)
+    fi['filename'] = filename
+    fi['size']     = fs[stat.ST_SIZE]
+    fi['modified'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_MTIME]))
+    fi['accessed'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_ATIME]))
+    fi['created']  = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_CTIME]))
+    
+    return fi
+
+
+def ZipDBFile(path):
+    """ Return a unique pair for zip and db filenames, prefixed with the path """
+    tempname = str( uuid.uuid4() )
+
+    zipfilename = os.path.join(path, tempname + ".backup")
+    dbfilename  = os.path.join(path, tempname + ".db")
+
+    return zipfilename, dbfilename
+
+
+def BackupGenerator(filespec = None,
+                    temppath = None,
+                    datapath = None,
+                    drives   = None,
+                    limit    = 100,
+                    ):
+    """ A backup generator that returns the filenames of the zipfile and dbmfile of what was backed up
+        
+    yields a zipfilename and dbfilename
+    limit - how big of a backup set do u want, in MB
+    """
+    
+    # limit is in count for now, eventually will be a size.
+
+    if (filespec == None or temppath == None or datapath == None or drives == None):
+        raise Exception("invalid values for Backup")
+
+    if not type(drives)==list:
+        raise Exception("drives must be of type list") 
+
+    fulldbname = os.path.join(datapath, "dbfull.db")
+
+    fileregex = re.compile(filespec)
+    
+    _limit = limit * 1024 * 1024
+    _size = 0 
+    _zip    = None
+    _dbdiff = None
+    _dbfull = anydbm.open(fulldbname, "c")
+
+    _count = 0
+
+    for currdir in drives:
+        if len(currdir) != 0:
+            for root, dirs, files in os.walk(currdir):
+                for f in files:
+                    fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) 
+
+                    if os.path.isfile(fullpath) and fileregex.match(fullpath):
+                        finfo = fileinfo(fullpath)
+                        
+                        if not _dbfull.has_key(fullpath) or not json.loads(_dbfull[fullpath])['crc'] == finfo['crc']:
+                            # it's not in our DB or it's different, then update the DB and the zip
+                            
+                            if _zip == None:
+                                # we need a zip and DBM opened, cause they may have been closed
+                                # when we generated back.
+                                zf, dbf = ZipDBFile(temppath)
+                                _zip    = zipfile.ZipFile(zf, "w", compression=zipfile.ZIP_DEFLATED)
+                                _dbdiff = anydbm.open(dbf, "n")
+
+                            sfinfo = json.dumps(finfo)                            
+                            _dbdiff[fullpath] = sfinfo
+                            _zip.write(fullpath)
+
+                            _size  += finfo['size']
+
+                            if _size >= _limit:
+                                # we have "filled" our zip /db combo, yield.
+                                _zip.close()
+                                _dbdiff.close()
+                                _zip = None
+                                _dbdiff = None
+                                _size = 0
+                                yield zf, dbf
+
+    # once we have traversed everything, clean up the last of it all.                                
+    if not _zip == None:
+        # still here 
+        _zip.close()
+        _dbdiff.close()
+        _zip = None
+        _dbdiff = None
+        _dbfull.close()
+        _dbfull = None
+        
+        yield zf, dbf
+
+
 
 class Backup(object):
     
@@ -69,25 +184,7 @@ class Backup(object):
         del(self.zipfile)
         os.remove(self.zipfilename)
 
-    def fileinfo(self, filename):
-        """ returns a dict of all the file information we want of a file """
-        fi = {}
-        fs = os.stat(filename)
 
-        fi['crc'] = self.crcval(filename)
-        fi['filename'] = filename
-        fi['size'] = fs[stat.ST_SIZE]
-        fi['modified'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_MTIME]))
-        fi['accessed'] = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_ATIME]))
-        fi['created']  = time.strftime("%m/%d/%Y %I:%M:%S %p",time.localtime(fs[stat.ST_CTIME]))
-        
-        return fi
-
-    def crcval(self, fileName):
-        prev = 0
-        for eachLine in open(fileName,"rb"):
-            prev = zlib.crc32(eachLine, prev)
-        return "%X"%(prev & 0xFFFFFFFF)
     
     def _backupfiles(self):
         """
