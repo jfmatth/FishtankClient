@@ -55,7 +55,7 @@ def testbackup():
 #	
 #	if b.backupcount > 0:
 
-	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives):
+	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=10):
 
 		# we should be able to modularize this better, but it is somewhat critical section, 
 		# if any of the items below are interrupted, then the backup will be incomplete.
@@ -77,16 +77,23 @@ def testbackup():
 		ekey = "".join(encrypt.EncryptAString(key, pk))
 
 		rawfilename = os.path.basename(dbf)
-
 		# now push all this to the server
 		host = settings[".managerhost"]
 		url = "/manager/dbmupload/"
-		fields = [("eKey",urllib.quote(ekey)),("guid", settings[".guid"]) ]
+		fields = [("eKey",urllib.quote(ekey)),
+				  ("clientguid", settings[".guid"]),
+				  ("backupguid", rawfilename.split(".")[0]),
+				 ]
 		files = [("dFile",rawfilename,open(dbf,"rb").read() )]
 		
 		log.info("Uploading %s" % dbf)
 		
 		status, reason, data = upload.httppost_multipart(host, url, fields, files)
+	
+		log.info("status = %s" % status)
+		log.info("reason = %s" % reason)
+		log.info("data = %s" % data)
+	
 	
 		# so the file is encrypted and uploaded, now put it in the cloud.
 		log.info("Adding to cloud")
