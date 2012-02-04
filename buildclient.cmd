@@ -24,7 +24,7 @@
 	
 	ECHO Creating %exe% for distribution.
 	
-::	CALL :copypython
+	CALL :copypython
 	CALL :copyclient
 	CALL :copysettings
 ::	CALL :copylibtorrent
@@ -51,22 +51,26 @@
 :copypython
 	:: add Python
 	ECHO python...
-	PUSHD misc
-	%zip% a -r %destzip% python > nul
-	POPD
+	%zip% a %destzip% misc\python*.msi > nul
 	
 	GOTO :eof
 
 :copyclient
 	:: Copy our client files to the lib directory
-	ECHO Main client\ files...
+	ECHO   Main client\ files...
 	%zip% a -r %destzip% client\* > nul
-	ECHO register.py
+	ECHO   register.py
 	%zip% a %destzip% register.py > nul
-	ECHO backuptest.py
+	ECHO   backuptest.py
 	%zip% a %destzip% backuptest.py > nul
-	ECHO Cypto from misc.
+	ECHO   Cypto from misc.
 	%zip% a -r %destzip% misc\Crypto > nul
+	ECHO   runclient.cmd
+	%zip% a %destzip% runclient.cmd > nul
+	ECHO   installclient.cmd
+	%zip% a %destzip% installclient.cmd > nul
+	
+	
 
 	GOTO :eof
 

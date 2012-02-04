@@ -100,9 +100,9 @@ class Manager(object):
         
         # URLSettings is none to start in case we don't have enough to bootstrap.
         self.URLSettings = None
-        if self._urlcheck():
-            self._urldict()
-            self._refresh()
+#        if self._urlcheck():
+#            self._urldict()
+#            self._refresh()
 
     def __del__(self):
         # before we die, save our settings file
@@ -139,7 +139,6 @@ class Manager(object):
                 self.URLSettings = URLDict( self['.managerhost'],
                                             self['.settingurl'],
                                             self['.guid'])
-#                self._refresh()
                 return self.URLSettings
             else:
                 raise Exception("Not enough settings for URL connection to manager")
@@ -150,29 +149,30 @@ class Manager(object):
             
         # if it's a 'setting.' then check the DBM, the settings.txt
         if key.startswith(LOCALCHAR):
-            if self.DBMSettings.has_key(key):
-                return self.DBMSettings[key]
-            else:
-                # it's a setting, check the local file and then put it in the DBM
-                if self.LocalSettings[key]:
+#            if self.DBMSettings.has_key(key):
+#                return self.DBMSettings[key]
+#            else:
+            # it's a setting, check the local file and then put it in the DBM
+
+            if self.LocalSettings[key]:
 #                    self.DBMSettings[key] = self.LocalSettings[key]
 #                    return self.DBMSettings[key]
-                    return self.LocalSettings[key]
-                else:
-                    #if it's not in the local, then we don't have it.
-                    return None
+                return self.LocalSettings[key]
+            else:
+                #if it's not in the local, then we don't have it.
+                return None
         else:
             # this is only a manager setting, see if we have it in the DBM otherwise, check the 
             # URL manager
-            if self.DBMSettings.has_key(key):
-                return self.DBMSettings[key]
-            else:
-                # need to check the manager via our url    
-                value = self._urldict()[key]
-                if value:
-                    self.DBMSettings[key] = value
-                    
-                return value
+#            if self.DBMSettings.has_key(key):
+#                return self.DBMSettings[key]
+#            else:
+            # need to check the manager via our url    
+            value = self._urldict()[key]
+#            if value:
+#                self.DBMSettings[key] = value
+                
+            return value
 
     def __setitem__(self,key, value):
         """ set the value in the DB or URL or settings file.  if key starts with "setting." then it is
