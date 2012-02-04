@@ -59,7 +59,7 @@ class Tracker(object):
         
         ihash_on_tracker = self.check_url(self.checkt_url + str(ti.info_hash))
         if "found" in ihash_on_tracker:
-            log.debug("Torrent info hash found on tracker.")
+            log.debug("Torrent info hash %s found on tracker." % ti.info_hash)
             return False
         else: 
             return True
@@ -70,7 +70,7 @@ class Tracker(object):
         """
         uuid_on_tracker = self.check_url(self.checku_url + str(ti.file_uuid))
         if "not found" in uuid_on_tracker:
-            log.debug("UUID of backup not found on tracker.")
+            log.debug("UUID %s not found on tracker." % ti.file_uuid)
             return False
         else:
             return True
