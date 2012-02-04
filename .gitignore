@@ -13,3 +13,4 @@ mycache
 *.db
 *.log
 cloud/*.enc
+cloud/*.backup-e

@@ -142,11 +142,15 @@ class Cloud(object):
         
         log.debug("backup_file = %s, data_dir = %s, torr_dir = %s, tracker = %s" % (backup_file, self.data_dir, self.torr_dir, self.my_tracker.tracker_ip))        
         
+        backup_basename = os.path.basename(backup_file)
+        my_uuid = backup_basename.split(".")[0]
+        
         # setup our TorrentMetaInfo object and create a torrent
         ti = TorrentMetaInfo(self.torr_dir, 
                              self.data_dir, 
                              self.my_tracker.tracker_ip, 
-                             os.path.basename(backup_file),
+                             backup_basename,
+                             file_uuid=my_uuid,
                              )
         
         # Make the torrent file and save new TorrentMetaInfo object with torrent name

@@ -16,9 +16,11 @@ class Tracker(object):
     
     def __init__(self, tracker="10.0.0.1:8000", 
                  announce_url="/backup/announce", 
-                 check_url="/backup/check/?info_hash=", 
+                 checkt_url="/backup/check/?info_hash=", 
                  upload_url="/backup/upload/", 
-                 download_url="/backup/download/"):
+                 download_url="/backup/download/",
+                 checku_url="/backup/check/?uuid=",
+                 ):
         """
         
         Parameters
@@ -34,7 +36,8 @@ class Tracker(object):
 
         # tracker URL fields
         self.announce_url = announce_url
-        self.check_url = check_url
+        self.checkt_url = checkt_url
+        self.checku_url = checku_url
         self.upload_url = upload_url
         self.download_url = download_url
         
@@ -51,67 +54,54 @@ class Tracker(object):
     
     def has_torrent(self, ti):
         """
-        Check if the torrent is on the tracker.
+        Check if a torrent exists on the tracker
+        """
+        
+        ihash_on_tracker = self.check_url(self.checkt_url + str(ti.info_hash))
+        if "found" in ihash_on_tracker:
+            log.debug("Torrent info hash found on tracker.")
+            return False
+        else: 
+            return True
+        
+    def has_uuid(self, ti):
+        """
+        Check if a uuid exists on the tracker
+        """
+        uuid_on_tracker = self.check_url(self.checku_url + str(ti.file_uuid))
+        if "not found" in uuid_on_tracker:
+            log.debug("UUID of backup not found on tracker.")
+            return False
+        else:
+            return True
+    
+    def can_upload(self, ti):
+        """
+        Tells us if we can upload the torrent.  Check two conditions.
+        1) is torrent already on tracker?  if true, return false
+        2) is backup on the tracker?  if false return true
         
         Parameter
         TorrentMetaInfo object
         
         Returns
-        True if found, False if not found
+        True if we can upload, otherwise false.
         """
         
-        log.debug("Checking for torrent on tracker.")
+        log.debug("Checking if we can upload the torrent...")
+               
+        # Check for the torrent on the tracker.  if it already exists,
+        # we don't need to upload.
+        if self.has_torrent(ti):
+            return False
         
-        # Calculate info hash
-        #info = lt.torrent_info(self.ti.torr_name)
-        #self.ti.info_hash=info.info_hash()
-        torr_check_url = self.check_url + str(ti.info_hash)
-        
-        # check with tracker to see if it has this info_hash
-        try:
-            conn = httplib.HTTPConnection(self.tracker_ip)
-            conn.request("GET", torr_check_url)
-            result = conn.getresponse()
-        except socket.error, e:
-            print e
-            print "Could not contact the tracker!  Please ensure that it's been started."
-            sys.exit(1)
-        except Exception, e:
-            print e
-            print "Unknown Error.  Exiting."
-            sys.exit(1)
+        # Check if the backup's uuid exists on tracker.  if it doesn't,
+        # we shouldn't upload.
+        if not self.has_uuid(ti):
+            return False
             
-        data = result.read()
-        log.debug("Finished checking for torrent: %s" % data)
-        conn.close()
-        
-        if "not found" in data:
-            return False
-        else:
-            return True
-        
-
-    def has_backup_file(self, file=""):
-        """
-        Description
-        Check if a backed up file is already on the tracker, using the info hash value.
-        
-        Arguments
-        file: Backup file to torrentize, and then check on tracker.
-        
-        Returns
-        True if backup file exists on the tracker.
-        """
-        
-        # We need the file to exist
-        if os.path.exists(file):
-            return self.has_torrent(lt.torrent_info(file).info_hash())
-        elif os.path.exists(self.file_save_path + "/" + file):
-            if DEBUG: logging.debug("path to file: %s\n" % os.path.join(self.file_save_path, file))
-            return self.has_torrent(lt.torrent_info(os.path.join(self.file_save_path, file).info_hash()))
-        else:
-            if DEBUG: logging.debug("path to file does not exist: %s\n" % file)
-            return False
+        return True
+    
         
     def upload_torrent(self, ti):
         """
@@ -127,12 +117,13 @@ class Tracker(object):
         log.debug("Uploading torrent to tracker.")
         
         # If the torrent exists already, don't re-upload it.
-        if self.has_torrent(ti):
-            log.debug("Torrent already exists.  Will not upload.")
+        if not self.can_upload(ti):
+            log.debug("Not uploading.")
             return True
         
         # Setup our POST values
         fields = self.post_fields
+        fields.append(("uuid", ti.file_uuid))
         files = [(self.post_file_path, os.path.basename(ti.torr_name), open(ti.torr_name, "rb").read())]
                     
         content_type, body = self.encode_multipart_formdata(fields, files)
@@ -145,6 +136,29 @@ class Tracker(object):
         else:
             return False
 
+
+    def check_url(self, url):
+        """
+        Generic function to check URL and pass back the output.
+        """
+        
+        # check with tracker to see if it has this info_hash
+        try:
+            conn = httplib.HTTPConnection(self.tracker_ip)
+            conn.request("GET", url)
+            result = conn.getresponse()
+        except socket.error, e:
+            log.warning("Could not contact the tracker!  Please ensure that it's been started.")
+            sys.exit(1)
+        except Exception, e:
+            log.critical("Unknown Error.  Exiting.")
+            sys.exit(1)
+            
+        data = result.read()
+        conn.close()
+        
+        return data
+        
     def encode_multipart_formdata(self, fields, files):
         """
         fields is a sequence of (name, value) elements for regular form fields.
