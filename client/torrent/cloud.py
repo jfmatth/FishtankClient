@@ -73,6 +73,7 @@ from session import Session
 from createtorrent import CreateTorrent
 from client.settingsmanager import settings
 import anydbm
+import gc
 
 # setup 'ma logging
 #DEBUG_LVL = logging.DEBUG
@@ -131,6 +132,8 @@ class Cloud(object):
         self.session = Session(session_dir, db_name)
         self.session.register(self.callback)
         self.session.configure_rates(rate)
+        
+        self.guid = settings[".guid"]
             
     def put(self, backup_file):
         """
@@ -285,18 +288,25 @@ class Cloud(object):
         Save a session's state
         """
         
-        # loop through our handles and write out fast resume data
-        for h in handles:
-            if h.is_valid() and h.has_metadata():
-                data = lt.bencode(h.write_resume_data())
-                open(os.path.join(options.save_path, h.get_torrent_info().name() + '.fastresume'), 'wb').write(data)
+        self.session.session = None
+        gc.collect()
+        self.my_tracker.update_client_status(self.guid, "stop")
         
-        # save session settings here
+#        # old method... we're not using fastresume right now.
+#        # loop through our handles and write out fast resume data
+#        for h in handles:
+#            if h.is_valid() and h.has_metadata():
+#                data = lt.bencode(h.write_resume_data())
+#                open(os.path.join(options.save_path, h.get_torrent_info().name() + '.fastresume'), 'wb').write(data)
+#        
+#        # save session settings here
     
     def start(self):
         """
         Start the cloud from a saved state
         """
+        
+        self.my_tracker.update_client_status(self.guid, "start")
         
         if self.serving():
             log.debug("Cloud already started.")

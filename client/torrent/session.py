@@ -6,6 +6,7 @@ import time
 import logging
 import anydbm
 import sys
+import random
 from torrentmetainfo import TorrentMetaInfo
 #from settingsmanager import *
 
@@ -22,8 +23,7 @@ class Session(object):
     def __init__(self, 
                  session_dir, 
                  db_name,
-                 to_port = 40000,
-                 from_port = 40010):
+                 ):
         self.session = None
         self.session_dir = session_dir
         self.torr_db = os.path.join(session_dir, db_name)
@@ -33,9 +33,9 @@ class Session(object):
         self.max_upload = 0
         self.max_download = 0
         
-        # Default values for serving a torrent
-        self.to_port = to_port
-        self.from_port = from_port
+        # Randomly generated before serving
+        self.to_port = -1
+        self.from_port = -1
     
     def register(self, callback):
         """
@@ -146,10 +146,17 @@ class Session(object):
         self.session = lt.session()
         peerid = settings["_peerid"]
         self.session.set_peer_id(lt.big_number(peerid))
+        
+        # Grab a random port, and take 10 in sequence.
+        self.from_port = random.randint(35000,55000)
+        self.to_port = self.from_port + 10
         self.session.listen_on(self.to_port, self.from_port)
+        
         self.session.set_upload_rate_limit(self.max_upload)
         self.session.set_download_rate_limit(self.max_download)
         self._configure_session_settings()
+        
+        log.debug("Serving on ports %s-%s" % (self.from_port, self.to_port))
         
     def _configure_session_settings(self):
         """

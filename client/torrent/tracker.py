@@ -1,8 +1,10 @@
 import httplib
 import urllib2 
+import urllib
 import mimetypes
 import logging
 import os
+import socket
 
 # setup 'ma logging
 #log = logging.getLogger("cloud.tracker")
@@ -20,15 +22,18 @@ class Tracker(object):
                  upload_url="/backup/upload/", 
                  download_url="/backup/download/",
                  checku_url="/backup/check/?uuid=",
+                 status_url="/backup/status/",
                  ):
         """
         
         Parameters
         tracker: IP:PORT string 
         announce_url: URL on Tracker to announce to
-        check_url: URL to check info hash of torrents, to see if they're being stored
+        checkt_url: URL to check info hash of torrents, to see if they're being stored
+        checku_url: URL to check uuid of backups, to see if they exist
         upload_url: URL to upload torrents to
-        download_url: URL to download torrents from  
+        download_url: URL to download torrents from
+        status_url: URL to change the start/stop status of a client
         """
 
         # tracker
@@ -40,6 +45,7 @@ class Tracker(object):
         self.checku_url = checku_url
         self.upload_url = upload_url
         self.download_url = download_url
+        self.status_url = status_url
         
         # Values specific to posting data in upload_torrent()
         self.post_file_path = "file_path"
@@ -52,12 +58,27 @@ class Tracker(object):
     # Upload torrent to the tracker
     ##########################################################
     
+    def update_client_status(self, guid, status):
+        """
+        Update the status of the client with <guid> to <status> (start/stop)
+        """
+        url = ("%s?%s" %(self.status_url, urllib.urlencode(
+                                                           {'guid': guid,
+                                                            'status': status,
+                                                            }
+                                                           )
+                         )
+               )
+        
+        return self.send_url(url)
+        
+    
     def has_torrent(self, ti):
         """
         Check if a torrent exists on the tracker
         """
         
-        ihash_on_tracker = self.check_url(self.checkt_url + str(ti.info_hash))
+        ihash_on_tracker = self.send_url(self.checkt_url + str(ti.info_hash))
         if "found" in ihash_on_tracker:
             log.debug("Torrent info hash %s found on tracker." % ti.info_hash)
             return False
@@ -68,7 +89,7 @@ class Tracker(object):
         """
         Check if a uuid exists on the tracker
         """
-        uuid_on_tracker = self.check_url(self.checku_url + str(ti.file_uuid))
+        uuid_on_tracker = self.send_url(self.checku_url + str(ti.file_uuid))
         if "not found" in uuid_on_tracker:
             log.debug("UUID %s not found on tracker." % ti.file_uuid)
             return False
@@ -137,7 +158,7 @@ class Tracker(object):
             return False
 
 
-    def check_url(self, url):
+    def send_url(self, url):
         """
         Generic function to check URL and pass back the output.
         """

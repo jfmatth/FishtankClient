@@ -125,13 +125,15 @@ def testgetcloud():
 	#calculate free space
 	fs = utility.get_free_space("/")
 	
-	amount = min(fs*percFree, maxGB)
+	amount = min(int(fs*percFree), int(maxGB))
 	
 	# we will ask for a torrent of size < = amount then.
 	
-	HTTPConnection = httplib.HTTPConnection(settings[".managerhost"])
+	managerhost = settings[".managerhost"]
+	guid = settings[".guid"]
+	HTTPConnection = httplib.HTTPConnection(managerhost)
 	URL = "/manager/getcloud/?%s" % urllib.urlencode( {'size':amount,
-													   'guid': settings[".guid"] 
+													   'guid': guid 
 													  }
 													)
 
@@ -140,6 +142,7 @@ def testgetcloud():
 	
 	if response.status != 200:
 		print "Error"
+		log.debug("URL: %s" % URL)
 	else:
 		ih = response.read()
 		if len(ih) > 0:
@@ -191,17 +194,22 @@ if __name__ == "__main__":
 		print "Menu"
 		print "b - Backup to the cloud"
 		print "g - Backup from the cloud"
+		print "s - Start the cloud"
+		print "p - Stop the cloud"
 		print "x - Exit test"
-		char = raw_input("press any key to stop the cloud")
+		char = raw_input("press any key to stop the cloud: ")
 	
 		if char == "b":
 			testbackup()
 		elif char=="g":
 			testgetcloud()
+		elif char=="s":
+			c.start()
+		elif char=="p":
+			c.stop()
 
 	log.debug("deleting cloud")
+	c.stop()
 	del(c)
-
-#	c.stop() - No workie yet!
 	
 	log.debug("ending")
