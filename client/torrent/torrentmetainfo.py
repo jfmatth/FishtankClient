@@ -19,6 +19,7 @@ class TorrentMetaInfo(object):
                  tracker, 
                  backup_file = None, 
                  torr_file = None,
+                 file_uuid = None,
                  ):
         """
         You must define a path where the torrent is saved, where the data files are saved, a tracker,
@@ -33,6 +34,7 @@ class TorrentMetaInfo(object):
         self.file_path = self.valid_dir(file_save_path)
         self.torr_name = self.valid_file(str(self.torr_path) + "/" + str(torr_file))
         self.file_name = self.valid_file(str(self.file_path) + "/" + str(backup_file))
+        self.file_uuid = file_uuid
         
         # Values that are filled in later, or that are optional.
         self.piece_size = 1048576                       # Default piece size.  Set this higher.

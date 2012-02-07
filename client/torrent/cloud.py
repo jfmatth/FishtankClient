@@ -73,6 +73,7 @@ from session import Session
 from createtorrent import CreateTorrent
 from client.settingsmanager import settings
 import anydbm
+import gc
 
 # setup 'ma logging
 #DEBUG_LVL = logging.DEBUG
@@ -131,6 +132,8 @@ class Cloud(object):
         self.session = Session(session_dir, db_name)
         self.session.register(self.callback)
         self.session.configure_rates(rate)
+        
+        self.guid = settings[".guid"]
             
     def put(self, backup_file):
         """
@@ -142,11 +145,15 @@ class Cloud(object):
         
         log.debug("backup_file = %s, data_dir = %s, torr_dir = %s, tracker = %s" % (backup_file, self.data_dir, self.torr_dir, self.my_tracker.tracker_ip))        
         
+        backup_basename = os.path.basename(backup_file)
+        my_uuid = backup_basename.split(".")[0]
+        
         # setup our TorrentMetaInfo object and create a torrent
         ti = TorrentMetaInfo(self.torr_dir, 
                              self.data_dir, 
                              self.my_tracker.tracker_ip, 
-                             os.path.basename(backup_file),
+                             backup_basename,
+                             file_uuid=my_uuid,
                              )
         
         # Make the torrent file and save new TorrentMetaInfo object with torrent name
@@ -281,18 +288,25 @@ class Cloud(object):
         Save a session's state
         """
         
-        # loop through our handles and write out fast resume data
-        for h in handles:
-            if h.is_valid() and h.has_metadata():
-                data = lt.bencode(h.write_resume_data())
-                open(os.path.join(options.save_path, h.get_torrent_info().name() + '.fastresume'), 'wb').write(data)
+        self.session.session = None
+        gc.collect()
+        self.my_tracker.update_client_status(self.guid, "stop")
         
-        # save session settings here
+#        # old method... we're not using fastresume right now.
+#        # loop through our handles and write out fast resume data
+#        for h in handles:
+#            if h.is_valid() and h.has_metadata():
+#                data = lt.bencode(h.write_resume_data())
+#                open(os.path.join(options.save_path, h.get_torrent_info().name() + '.fastresume'), 'wb').write(data)
+#        
+#        # save session settings here
     
     def start(self):
         """
         Start the cloud from a saved state
         """
+        
+        self.my_tracker.update_client_status(self.guid, "start")
         
         if self.serving():
             log.debug("Cloud already started.")
