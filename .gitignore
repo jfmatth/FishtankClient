@@ -12,5 +12,6 @@ misc/pycrypto
 mycache
 *.db
 *.log
-cloud/*.enc
-cloud/*.backup-e
+cloud/*
+*.msi
+download
