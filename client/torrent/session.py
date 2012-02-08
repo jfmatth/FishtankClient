@@ -201,7 +201,7 @@ class Session(object):
                 pass
             td["ti"] = ti.info
             td["save_path"] = ti.get_fpath()
-            td["auto_managed"] = True
+            td["auto_managed"] = False
             td["duplicate_is_error"] = True
             td["paused"] = False
             
