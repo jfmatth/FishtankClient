@@ -13,7 +13,7 @@ if <key> starts with "." then that value will be written to the local
 "settings" file (default is settings.txt)
 
 if <key> starts with #, thats special on the server.
-
+f.
 """
 
 import anydbm
@@ -96,7 +96,7 @@ class Manager(object):
         self.LocalSettings = LocalDict(thefile)
         
         # our DB cache for all our settings from the URL /manager/settings
-        self.DBMSettings = anydbm.open("settings.db", "c")
+#        self.DBMSettings = anydbm.open("settings.db", "c")
         
         # URLSettings is none to start in case we don't have enough to bootstrap.
         self.URLSettings = None
@@ -123,9 +123,10 @@ class Manager(object):
         refreshs all keys in the local DBM from the URL manager
         """
         # if we have all the values we need to hookup to the URL
-        for key in self.DBMSettings.keys():
-            if not key.startswith(LOCALCHAR):
-                self.DBMSettings[key] = self._urldict()[key]
+#        for key in self.DBMSettings.keys():
+#            if not key.startswith(LOCALCHAR):
+#                self.DBMSettings[key] = self._urldict()[key]
+        pass
 
     def _urldict(self):
         """ a semi-factory type method, return the URLSettings pointer if we have one
@@ -181,10 +182,10 @@ class Manager(object):
         if key.startswith(LOCALCHAR):
             # if we are putting a local setting, store it in the DB and settings file.
             self.LocalSettings[key] = value
-            self.DBMSettings[key] = value
+#            self.DBMSettings[key] = value
         else:
             # it's not something local only, so setup the DBM and put it on the URL
-            self.DBMSettings[key] = value
+#            self.DBMSettings[key] = value
             self._urldict()[key] = value
 
 

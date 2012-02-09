@@ -36,6 +36,7 @@
 	dir %exe%
 	
 	erase %destzip%
+    erase settings.example
 	
 	GOTO :eof
 
