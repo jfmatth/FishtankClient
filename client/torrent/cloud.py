@@ -356,7 +356,10 @@ class Cloud(object):
         """
         return a list of torrents we're currently serving
         """
-        pass
+        count = 1
+        for (name,infohash) in self.session.serving():
+            print "%s: Name: %s, Info Hash: %s" % (count, name, infohash)
+            count = count + 1
     
     
     ###########################################

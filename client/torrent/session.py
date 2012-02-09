@@ -261,8 +261,18 @@ class Session(object):
                 self.session.remove_torrent(handle)
                 return True
                 
-        return False        
+        return False
+    
+    def serving(self):
+        """
+        Return a list of tuples with the info hash and name of all torrents being
+        served.
+        """
+        vals = []
+        for h in self.handles:
+            vals.append( (h.name(), str(h.info_hash())) )
         
+        return vals
             
 
     def serve_torrent_by_hash(self, torr_hash_l, torr_dir, data_dir, tracker_ip, ext):
