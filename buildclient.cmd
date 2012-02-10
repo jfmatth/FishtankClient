@@ -50,9 +50,9 @@
 	GOTO :eof
 
 :copypython
-	:: add Python
-	ECHO python...
-	%zip% a %destzip% misc\python*.msi > nul
+	:: add Python, we have python already configured the way we want it.
+	ECHO python pre-configured....
+	%zip% a -r %destzip% misc\python > nul
 	
 	GOTO :eof
 
@@ -64,8 +64,8 @@
 	%zip% a %destzip% register.py > nul
 	ECHO   backuptest.py
 	%zip% a %destzip% backuptest.py > nul
-	ECHO   Cypto from misc.
-	%zip% a -r %destzip% misc\Crypto > nul
+::	ECHO   Cypto from misc.
+::	%zip% a -r %destzip% misc\Crypto > nul
 	ECHO   runclient.cmd
 	%zip% a %destzip% runclient.cmd > nul
 	ECHO   installclient.cmd
