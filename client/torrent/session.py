@@ -110,34 +110,6 @@ class Session(object):
         return '%6.3gPB' % val
 
         
-    # needs work...
-    def friendly_numbers(self, number):
-        """
-        Friend-lify numbers before we send them back to the user.  Works with longs and ints only.
-        """
-        
-#        suffix = ["B", "KB", "MB", "GB", "TB", "PB"]
-#        
-#        c = 0
-#        while (number / 1000):
-#            number /= 1000
-#            c += 1
-        
-        # gigabytes!  wowzers!
-        if (number / 1000000000) is not 0 and (number / 1000000000) is not 0L:
-            out = "%.2f%s" % (( number / 1000000000.0 ), "GB")
-        # megabytes.  Now you're talking.
-        elif (number / 1000000) is not 0 and (number / 1000000) is not 0L:
-            out = "%.2f%s" % (( number / 1000000.0 ), "MB")
-        # kilobytes.  Get off the dialup!
-        if (number / 1000) is not 0 and (number / 1000) is not 0L:
-            out = "%.2f%s" % (( number / 1000.0 ), "KB")
-        # bytes?!  I cannot save you.
-        else:
-            out = "%.2f%s" % ( number, "B")
-            
-        return out
-        
     def _configure_session(self):
         """
         This starts our session using any parameters that we've set -- ports, upload/download
@@ -196,7 +168,9 @@ class Session(object):
             td = {}
             ti.info = lt.torrent_info(ti.torr_name)
             try:
-                td["resume_data"] = open(ti.torr_path + "/" + ti.info.name() + '.fastresume', 'rb').read()
+                #td["resume_data"] = open(ti.torr_path + "/" + ti.info.name() + '.fastresume', 'rb').read()
+                td["resume_data"] = open(self.session_dir + "/" + ti.info.name() + '.fastresume', 'rb').read()
+                log.debug("Torrent resume data found... loading")
             except:
                 pass
             td["ti"] = ti.info
@@ -240,6 +214,25 @@ class Session(object):
         else:
             log.debug("Torrent exists in session.")
             return True
+    
+    def unserve_all(self):
+        """
+        Stop serving a torrent by info hash, or by TI.  Prefer info_hash over TI.
+        """
+        
+        log.debug("Unserving all torrent.")  
+        
+        # apparently we can remove from a list we're iterating over if it's reversed?...
+        for handle in reversed(self.handles):
+            try:
+                self.session.remove_torrent(handle)
+            except RuntimeError:
+                log.warning("Attempted to remove non-existent torrent from session.")
+            else:
+                log.debug("Torrent removed from session!")    
+            
+            self.handles.remove(handle)
+
         
     def unserve(self, info_hash=None, ti=None):
         """
@@ -255,10 +248,11 @@ class Session(object):
         else:
             log.debug("Cannot unserve a torrent without a valid hash or TorrentMetaInfo object.")
             return False
-                
+        
         for handle in self.handles:
             if info_hash == str(handle.info_hash):
-                self.session.remove_torrent(handle)
+                self.session.remove_torrent(handle) # unserve
+                self.handles.remove(handle)         # remove from our list of handles
                 return True
                 
         return False
@@ -373,17 +367,27 @@ class Session(object):
             print info_hash, " ", filename
         self.db.close()
         
-    # incomplete
+    def pause(self):
+        """Check if the session object exists, and pause it if so. """
+        if self.session:
+            self.session.pause()
+            return True
+        else:
+            return False
+        
     def save_session(self):
         """
-        Save a session's state
+        Save a session's state into fast resume data
         """
         
+        # pause the session
+        self.pause()
+        
         # loop through our handles and write out fast resume data
-        for h in handles:
+        for h in self.handles:
             if h.is_valid() and h.has_metadata():
                 data = lt.bencode(h.write_resume_data())
-                open(os.path.join(options.save_path, h.get_torrent_info().name() + '.fastresume'), 'wb').write(data)
+                open(os.path.join(self.session_dir, h.get_torrent_info().name() + '.fastresume'), 'wb').write(data)
         
         # save session settings here
     
