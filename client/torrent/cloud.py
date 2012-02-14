@@ -282,12 +282,18 @@ class Cloud(object):
     # Start/Stop Cloud
     ###########################################    
         
-    # incomplete
     def stop(self):
         """
         Save a session's state
         """
         
+        # save our fast resume data
+        self.session.save_session()
+        
+        # remove our torrents from the active session
+        self.session.unserve_all()
+        
+        # kill the session and update the tracker
         self.session.session = None
         gc.collect()
         self.my_tracker.update_client_status(self.guid, "stop")
@@ -356,7 +362,10 @@ class Cloud(object):
         """
         return a list of torrents we're currently serving
         """
-        pass
+        count = 1
+        for (name,infohash) in self.session.serving():
+            print "%s: Name: %s, Info Hash: %s" % (count, name, infohash)
+            count = count + 1
     
     
     ###########################################

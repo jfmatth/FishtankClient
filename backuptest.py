@@ -196,6 +196,9 @@ if __name__ == "__main__":
 		print "g - Backup from the cloud"
 		print "s - Start the cloud"
 		print "p - Stop the cloud"
+		print "i - Is Serving?"
+		print "e - Serving What?"
+		print "d - Contents of database"
 		print "x - Exit test"
 		char = raw_input("press any key to stop the cloud: ")
 	
@@ -207,6 +210,12 @@ if __name__ == "__main__":
 			c.start()
 		elif char=="p":
 			c.stop()
+		elif char=="i":
+			print "Is serving?: %s" % c.is_serving()
+		elif char=="e":
+			c.serving()
+		elif char=="d":
+			c.show_db()
 
 	log.debug("deleting cloud")
 	c.stop()
