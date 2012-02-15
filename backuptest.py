@@ -1,5 +1,5 @@
 """
-backuptest.py - test the backup / encrtyption
+backuptest.py - test the backup / encryption
 """
 
 from client import backup, encrypt, upload
@@ -15,7 +15,151 @@ import os
 import anydbm
 import json
 
-c = []
+def BackupFromCloud(cloud = None, 
+					settings = None):
+
+	if cloud == None:
+		raise Exception("No cloud to backup to :) ")
+	
+	if settings == None:
+		raise Exception("No Settings to use :)")
+	
+	
+	percFree = int(settings["max_free_perc"]) / 100.00
+	maxGB = int(settings["min_free_gb"]) * 1024 * 1024 * 1024
+	
+	#calculate free space
+	fs = utility.get_free_space("/")
+	
+	amount = min(int(fs*percFree), int(maxGB))
+	
+	# we will ask for a torrent of size < = amount then.
+	
+	managerhost = settings[".managerhost"]
+	guid = settings[".guid"]
+	HTTPConnection = httplib.HTTPConnection(managerhost)
+	URL = "/manager/getcloud/?%s" % urllib.urlencode( {'size':amount,
+													   'guid': guid 
+													  }
+													)
+
+	HTTPConnection.request("GET", URL)
+	response = HTTPConnection.getresponse()
+	
+	if response.status != 200:
+		log.debug("error : URL: %s" % URL)
+	else:
+		infohash = response.read()
+		if len(infohash) > 0:
+			# get it from the cloud()
+			print "asking for %s" % infohash
+			cloud.get(infohash)
+		else:
+			print "Nothing to get"		
+
+
+
+def BackupToCloud(cloud = None,
+				  settings = None):
+	
+	if cloud == None:
+		raise Exception("No cloud to backup to :) ")
+	
+	if settings == None:
+		raise Exception("No Settings to use :)")
+	
+	log.info("BackupToCloud() starting")
+		
+	filespec = settings["filespec"]
+	if filespec == None:
+		raise("Can't have a blank filespec")
+	log.info("filespec = %s" % filespec)
+	
+	temppath = settings["temppath"]
+	if temppath == None:
+		raise("No temppath specified")
+	log.info("temppath = %s" % temppath)
+	
+	dbpath = settings["dbpath"]
+	if dbpath == None:
+		raise("no DB path specified")
+	log.info("dbpath = %s" % dbpath)
+	
+	if not settings["backupdrives"]==None:
+		drives = settings["backupdrives"].split(",")
+	else:
+		raise Exception("No backupdrives specified")
+	log.info("drives = %s" % drives)
+	
+	backupsize = settings["backupsize"] or 1000
+	backupsize = int(backupsize)
+	
+	pk = settings[".publickey"]
+	
+	cloudpath = settings["cloud_files"]
+	if cloudpath == None:
+		raise("no cloud_files specified")
+	
+	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=10):
+
+		# we should be able to modularize this better, but it is somewhat critical section, 
+		# if any of the items below are interrupted, then the backup will be incomplete.
+		
+		log.debug("zf = %s\n dbf = %s" % (zf, dbf) )
+				
+		filein  = zf
+		fileout = os.path.join(cloudpath,os.path.basename(zf) + "-e") 
+	
+		key = str(uuid.uuid4() )
+
+		log.info("Encrypting %s"  % filein)
+		encrypt.EncryptAFile(filein=filein, fileout=fileout, key=key)
+		# file is encrypted, sitting at fileout.
+		
+		# delete our original file.
+		# encrypt the key and push to server?
+		ekey = "".join(encrypt.EncryptAString(key, pk))
+
+		rawfilename = os.path.basename(dbf)
+		host = settings[".managerhost"]
+		url = "/manager/dbmupload/"
+		fields = [("eKey",urllib.quote(ekey)),
+				  ("clientguid", settings[".guid"]),
+				  ("backupguid", rawfilename.split(".")[0]),
+				 ]
+		files = [("dFile",rawfilename,open(dbf,"rb").read() )]
+		
+		log.info("Uploading %s" % dbf)
+		
+		status, reason, data = upload.httppost_multipart(host, url, fields, files)
+	
+		log.info("status = %s" % status)
+		log.info("reason = %s" % reason)
+		log.info("data = %s" % data)
+
+		# so the file is encrypted and uploaded, now put it in the cloud.
+		log.info("Adding to cloud")
+		cloud.put(fileout)
+
+		# now, update the dbfull database to show that the files are updated.
+		log.debug("Updating dbfull.db")
+		_dbfull = anydbm.open(os.path.join(dbpath, "dbfull.db"), "c") 
+		_dbdiff = anydbm.open(dbf)
+		for key in _dbdiff:
+			# if it's not there, or the CRC's are different, update the DBfull db.
+			if ( not _dbfull.has_key(key) ) or ( not json.loads(_dbfull[key])['crc'] == json.loads(_dbdiff[key])['crc'] ): 
+				_dbfull[key] = _dbdiff[key]
+
+		log.debug("Finishing backup...")
+
+		# close up...		
+		_dbfull.close()
+		_dbdiff.close()
+		os.remove(dbf)
+		os.remove(zf)
+
+
+
 
 def testbackup():
 
@@ -40,36 +184,29 @@ def testbackup():
 		drives = ("c:/",)
 	log.info("drives = %s" % drives)
 	
+	backupsize = settings["backupsize"] or 1000
+	backupsize = int(backupsize)
+	
 	pk = settings[".publickey"]
 	
 	cloudpath = settings["cloud_files"]
 	
-#	# backup.
 	log.info("backing up...")
-#	b = backup.Backup(filespec, 
-#					  temppath, 
-#					  dbpath,
-#					  drives)
-#	
-#	b.execute()
-#	
-#	if b.backupcount > 0:
 
 	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=10):
 
 		# we should be able to modularize this better, but it is somewhat critical section, 
 		# if any of the items below are interrupted, then the backup will be incomplete.
 		
-		log.debug("zf = %s, dbf = %s" % (zf, dbf) )
+		log.debug("zf = %s\n dbf = %s" % (zf, dbf) )
 				
-		fi = zf
-		fo = os.path.join(cloudpath,os.path.basename(zf) + "-e") 
+		filein  = zf
+		fileout = os.path.join(cloudpath,os.path.basename(zf) + "-e") 
 	
 		key = str(uuid.uuid4() )
 
-		log.info("Encrypting %s to %s" % (fi, fo) )
-	
-		encrypt.EncryptAFile(filein=fi,fileout=fo,key=key)
+		log.info("Encrypting %s"  % filein)
+		encrypt.EncryptAFile(filein=filein, fileout=fileout, key=key)
 		# file is encrypted, sitting at fileout.
 		
 		# delete our original file.
@@ -77,7 +214,6 @@ def testbackup():
 		ekey = "".join(encrypt.EncryptAString(key, pk))
 
 		rawfilename = os.path.basename(dbf)
-		# now push all this to the server
 		host = settings[".managerhost"]
 		url = "/manager/dbmupload/"
 		fields = [("eKey",urllib.quote(ekey)),
@@ -97,7 +233,7 @@ def testbackup():
 	
 		# so the file is encrypted and uploaded, now put it in the cloud.
 		log.info("Adding to cloud")
-		c.put(fo)
+		c.put(fileout)
 
 		# now, update the dbfull database to show that the files are updated.
 		log.debug("Updating dbfull.db")
@@ -108,8 +244,9 @@ def testbackup():
 			if ( not _dbfull.has_key(key) ) or ( not json.loads(_dbfull[key])['crc'] == json.loads(_dbdiff[key])['crc'] ): 
 				_dbfull[key] = _dbdiff[key]
 
-		log.debug("done updating dbfull.db")
-		
+		log.debug("Finishing backup...")
+
+		# close up...		
 		_dbfull.close()
 		_dbdiff.close()
 		os.remove(dbf)
@@ -150,7 +287,12 @@ def testgetcloud():
 			print "asking for %s" % ih
 			c.get(ih)
 		else:
-			print "Nothing to get"		
+			print "Nothing to get"
+			
+			
+			
+			
+					
 
 if __name__ == "__main__":
 	# make sure we have the necessary settings
@@ -203,17 +345,24 @@ if __name__ == "__main__":
 		char = raw_input("press any key to stop the cloud: ")
 	
 		if char == "b":
-			testbackup()
+			BackupToCloud(c, settings)
+			#testbackup()
+			
 		elif char=="g":
-			testgetcloud()
+			BackupFromCloud(c, settings)
+			
 		elif char=="s":
 			c.start()
+			
 		elif char=="p":
 			c.stop()
+			
 		elif char=="i":
 			print "Is serving?: %s" % c.is_serving()
+			
 		elif char=="e":
 			c.serving()
+			
 		elif char=="d":
 			c.show_db()
 
