@@ -1,1 +1,1 @@
-misc\python\python.exe backuptest.py
+misc\python\python.exe agent.py

@@ -64,14 +64,12 @@
 	%zip% a %destzip% register.py > nul
 	ECHO   backuptest.py
 	%zip% a %destzip% backuptest.py > nul
-::	ECHO   Cypto from misc.
-::	%zip% a -r %destzip% misc\Crypto > nul
 	ECHO   runclient.cmd
 	%zip% a %destzip% runclient.cmd > nul
 	ECHO   installclient.cmd
 	%zip% a %destzip% installclient.cmd > nul
-	
-	
+	ECHO   agent.py
+	%zip% a %destzip% agent.py > nul
 
 	GOTO :eof
 
