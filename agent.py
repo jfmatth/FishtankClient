@@ -10,12 +10,6 @@ from backuptest import BackupFromCloud, BackupToCloud
 import os
 
 
-c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
-                torr_dir = settings["cloud_meta"],
-                data_dir = settings["cloud_files"],
-                session_dir = settings["cloud_meta"]
-                )
-
 def sigStop():
     """
     returns True if a stop signal was found, in this case, a file in the temp directory for now.
@@ -37,18 +31,20 @@ def BFC():
     BackupFromCloud(c, settings)
 
 if __name__== "__main__":
+
+    c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
+                    torr_dir = settings["cloud_meta"],
+                    data_dir = settings["cloud_files"],
+                    session_dir = settings["cloud_meta"]
+                    )
+
     # main schedule queue.
     log.info("Starting agent")
-    
-    #load our execution queue.
-#    Tasks.enter(0,1, checkStop, ())
-#    Tasks.enter(10, 1, BTC, () )
-#    Tasks.enter(20, 1, BFC, () )
     
     s = Tasker(sigStop, 10)
     s.addtask(BTC, 60)
     s.addtask(BFC, 45)
-    
+
     # start our cloud()
     log.info("Starting the cloud")
     c.start()
@@ -61,5 +57,3 @@ if __name__== "__main__":
     
     log.debug("shutting down cloud")
     c.stop()
-    
-    

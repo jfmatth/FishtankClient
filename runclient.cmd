@@ -1,1 +1,1 @@
-misc\python\python.exe agent.py
+IF NOT x%fPYTHON%==x %fPYTHON% agent.py

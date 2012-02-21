@@ -54,10 +54,6 @@ def BackupFromCloud(cloud = None,
 			# get it from the cloud()
 			print "asking for %s" % infohash
 			cloud.get(infohash)
-		else:
-			print "Nothing to get"		
-
-
 
 def BackupToCloud(cloud = None,
 				  settings = None):
