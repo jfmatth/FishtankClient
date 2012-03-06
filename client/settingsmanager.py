@@ -93,6 +93,10 @@ class Manager(object):
 
     def __init__(self,thefile="settings.txt"):
         # a link to our local settings file, bootstrap.
+
+        if not os.path.exists(thefile):
+            raise Exception("%s does not exist in %s" % (thefile, os.getcwd()))
+
         self.LocalSettings = LocalDict(thefile)
         
         # our DB cache for all our settings from the URL /manager/settings
@@ -190,5 +194,5 @@ class Manager(object):
 
 
 # define settings here
-
+print "settings module being imported?"
 settings = Manager()
