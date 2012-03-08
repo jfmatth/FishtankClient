@@ -194,5 +194,4 @@ class Manager(object):
 
 
 # define settings here
-print "settings module being imported?"
 settings = Manager()
