@@ -7,9 +7,6 @@ import servicemanager
 import sys
 import os
 
-# allows us to try each of the service "wait" techniques.
-sWait = True
-
 class bService(win32serviceutil.ServiceFramework):
     _svc_name_ = "BackupService"
     _svc_display_name_ = "Backup Service for desktops"
@@ -31,7 +28,7 @@ class bService(win32serviceutil.ServiceFramework):
         # set the event to call
         win32event.SetEvent(self.hWaitStop)
 
-        self.log('Stoping service %' % self._svc_name_)
+        self.log('Stoping service %s' % self._svc_name_)
         self.isAlive = False
 
     def SvcDoRun(self):
@@ -70,7 +67,6 @@ class bService(win32serviceutil.ServiceFramework):
             """
             Stop function for main scheuler loop
             """
-            print "sigStop"
             return not self.isAlive
 
         c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
@@ -82,7 +78,8 @@ class bService(win32serviceutil.ServiceFramework):
         # main schedule queue.
         log.info("Starting agent")
 
-        s = Tasker(sigStop, 10)
+        s = Tasker(sigStop, 1)  # we should check ourselves every second?
+
         s.addtask(BTC, 60)
         s.addtask(BFC, 45)
 
@@ -91,11 +88,13 @@ class bService(win32serviceutil.ServiceFramework):
         c.start()
 
         log.debug("Starting the Tasks")
-
         s.run()
-        c.stop()    # when this exists, then I guess we've stopped the service?
 
-#        win32event.WaitForSingleObject(self.hWaitStop,win32event.INFINITE)
+        log.debug("Stopping the cloud")
+        c.stop()    # when this exists, then I guess we've stopped the service?
+        log.debug("cloud stopped")
+
+        win32event.WaitForSingleObject(self.hWaitStop,win32event.INFINITE)
 
         self.ReportServiceStatus(win32service.SERVICE_STOPPED)
         return
