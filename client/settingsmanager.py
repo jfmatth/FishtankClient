@@ -41,13 +41,15 @@ class LocalDict(object):
         else:
             self.cp.readfp( open(self.configfile) )
 
-    def __getitem__(self, key):
+ #   def __getitem__(self, key):
+    def get(self, key):
         try:
             return self.cp.get(self.section, key)
         except ConfigParser.NoOptionError:
             return None
 
-    def __setitem__(self, key, value):
+ #   def __setitem__(self, key, value):
+    def set(self, key, value):
         self.cp.set(self.section, key, value)
 
     def save(self):
@@ -65,7 +67,8 @@ class URLDict(object):
         # define our connection to 
         self.conn = httplib.HTTPConnection(self.host)
            
-    def __getitem__(self, key):
+ #   def __getitem__(self, key):
+    def get(self, key):
         ## call the URL to get the value
         self.conn.request("GET", self.url + self.guid + "/" + key + "/")
         response = self.conn.getresponse()
@@ -75,7 +78,8 @@ class URLDict(object):
         
         return response.read()
 
-    def __setitem__(self, key, value):
+ #   def __setitem__(self, key, value):
+    def set(self, key, value):
         ## POST our new value.
         params = urllib.urlencode({'value': value})
         headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
@@ -148,7 +152,8 @@ class Manager(object):
             else:
                 raise Exception("Not enough settings for URL connection to manager")
 
-    def __getitem__(self,key):
+ #   def __getitem__(self,key):
+    def get(self,key):
         """ return the value of key, either from the local settings file, the local DB or the URL, 
             and then cache it locally in the DB """
             
@@ -179,7 +184,8 @@ class Manager(object):
                 
             return value
 
-    def __setitem__(self,key, value):
+ #   def __setitem__(self,key, value):
+    def set(self,key, value):
         """ set the value in the DB or URL or settings file.  if key starts with "setting." then it is
             stored locally only in the settings file
         """
