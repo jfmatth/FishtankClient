@@ -79,14 +79,14 @@ class URLDict(object):
         return response.read()
 
  #   def __setitem__(self, key, value):
-    def set(self, key, value):
-        ## POST our new value.
-        params = urllib.urlencode({'value': value})
-        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
-        self.conn.request("POST", self.url + self.guid + "/" + key + "/", params, headers)
-        response = self.conn.getresponse()
-        if response.status != 200:
-            raise Exception("Error setting value for %s, response = %s" % (key, response.read()) )
+    #def set(self, key, value):
+    #    ## POST our new value.
+    #    params = urllib.urlencode({'value': value})
+    #    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+    #    self.conn.request("POST", self.url + self.guid + "/" + key + "/", params, headers)
+    #    response = self.conn.getresponse()
+    #    if response.status != 200:
+    #        raise Exception("Error setting value for %s, response = %s" % (key, response.read()) )
 
 
 class Manager(object):
@@ -112,16 +112,16 @@ class Manager(object):
 #            self._urldict()
 #            self._refresh()
 
-    def __del__(self):
-        # before we die, save our settings file
-        if not self.LocalSettings == None:
-            self.LocalSettings.save()
+    #def __del__(self):
+    #    # before we die, save our settings file
+    #    if not self.LocalSettings == None:
+    #        self.LocalSettings.save()
 
     def _urlcheck(self):
         """
         Checks to make sure we have everything we need to connect to our URL manager
         """
-        if (self['.managerhost'] and self['.settingurl'] and self['.guid']):
+        if (self.get('.managerhost') and self.get('.settingurl') and self.get('.guid') ):
             return True
         else:
             return False
@@ -145,9 +145,10 @@ class Manager(object):
         else:
             if self._urlcheck():
                 # setup URLSettings as a URLDict with the proper settings
-                self.URLSettings = URLDict( self['.managerhost'],
-                                            self['.settingurl'],
-                                            self['.guid'])
+                self.URLSettings = URLDict( self.get('.managerhost'),
+                                            self.get('.settingurl'),
+                                            self.get('.guid')
+                                        )
                 return self.URLSettings
             else:
                 raise Exception("Not enough settings for URL connection to manager")
@@ -159,31 +160,15 @@ class Manager(object):
             
         # if it's a 'setting.' then check the DBM, the settings.txt
         if key.startswith(LOCALCHAR):
-#            if self.DBMSettings.has_key(key):
-#                return self.DBMSettings[key]
-#            else:
-            # it's a setting, check the local file and then put it in the DBM
 
-            if self.LocalSettings[key]:
-#                    self.DBMSettings[key] = self.LocalSettings[key]
-#                    return self.DBMSettings[key]
-                return self.LocalSettings[key]
+            if self.LocalSettings.get(key):
+                return self.LocalSettings.get(key)
             else:
                 #if it's not in the local, then we don't have it.
                 return None
         else:
-            # this is only a manager setting, see if we have it in the DBM otherwise, check the 
-            # URL manager
-#            if self.DBMSettings.has_key(key):
-#                return self.DBMSettings[key]
-#            else:
-            # need to check the manager via our url    
-            value = self._urldict()[key]
-#            if value:
-#                self.DBMSettings[key] = value
+            return self._urldict().get(key)
                 
-            return value
-
  #   def __setitem__(self,key, value):
     def set(self,key, value):
         """ set the value in the DB or URL or settings file.  if key starts with "setting." then it is
@@ -191,13 +176,7 @@ class Manager(object):
         """
         if key.startswith(LOCALCHAR):
             # if we are putting a local setting, store it in the DB and settings file.
-            self.LocalSettings[key] = value
-#            self.DBMSettings[key] = value
-        else:
-            # it's not something local only, so setup the DBM and put it on the URL
-#            self.DBMSettings[key] = value
-            self._urldict()[key] = value
-
+            self.LocalSettings.set(key, value)
 
 # define settings here
 settings = Manager()
