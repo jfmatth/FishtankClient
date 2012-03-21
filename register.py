@@ -57,10 +57,16 @@ def register():
 
     except socket.error:
         return False
+
+
+def target(*argv):
+    main()
+
+def main():
+    if register():
+        print "Registered"
     
 if __name__ == "__main__":
     # grab the userid and password 
 
-    if register():
-        print "Registered"
-    
+    main()
