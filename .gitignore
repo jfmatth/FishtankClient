@@ -17,7 +17,6 @@ cloud/*
 *.msi
 download
 *.komodoproject
-*.spec
 warnbuild.txt
 build/*
 dist/*

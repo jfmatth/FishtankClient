@@ -1,4 +1,58 @@
 :main
+    :: 
+    :: buildclient.cmd - builds the distributable version of client.  This only works from a
+    :: working client setup.
+    
+    ::
+    :: check for things, call the buildenv.cmd to setup local environment.
+    ::
+    
+    :: settings.txt
+    IF NOT EXIST settings.txt CALL :error "settings.txt not found, create and try again" & GOTO :eof
+    :: buildclient.py
+    IF NOT EXIST buildclient.py CALL :error "buildclient.py not found" & GOTO :eof
+    
+    :: buildenv.cmd
+    IF NOT EXIST buildenv.cmd CALL :error "buildenv.cmd not found, need to create to run" & GOTO :eof
+    CALL buildenv.cmd
+    
+    :: agentservice.spec
+    IF NOT EXIST agentservice.spec CALL :error "agentservice.spec not found" & GOTO :eof
+    
+    :: 7zip and SFX necessary.
+    IF NOT EXIST %zip% CALL :error "%zip% not found" & GOTO :eof
+    IF NOT EXIST %sfx% CALL :error "%sfx% not found" & GOTO :eof
+        
+    :: call pyinstaller
+    python %pyinst%\build.py --noconfirm agentservice.spec
+    IF NOT %errorlevel%==0 CALL :error "Error %errorlevel% on building" & GOTO :eof
+
+    :: at this point, the dist directory should have what we want.
+    :: so build a settings.txt and then zip it all up.
+    python buildclient.py dist\agent\
+    IF NOT %errorlevel%==0 CALL :error "Error calling buildclient.py" & GOTO :eof
+    
+    :: everything we need for an EXE is in the dist\agent directory
+    :: zip it up over to our %destdir%
+    :: cd into the dist\agent directory and put output into dest.
+    CD dist\agent
+    PAUSE
+    IF EXIST %destdir%\client.exe ERASE %destdir%\client.exe
+    %zip% a -sfx %destdir%\client.exe * -r
+    IF NOT EXIST %destdir%\client.exe CALL :error "problem generating EXE" & GOTO :EOF
+    CD ..\..
+
+    :: clean up
+    
+    :: remove build
+    RMDIR build /q/s
+    ERASE log*.log
+    ERASE warn*.txt
+    :: RMDIR dist /s/q
+
+    GOTO :eof
+
+:oldmain
 	@echo off
 	:: buildclient.cmd - builds the cilent.zip file.
 	::
@@ -107,3 +161,13 @@
 	%zip% a  %destzip% misc\vcredist_x86.exe > nul
 	 
 	GOTO :eof
+        
+:error
+    ECHO %1
+    PAUSE
+    
+    GOTO :eof
+
+        
+:end
+    ECHO commplete

@@ -5,10 +5,8 @@ Encrypt things
 
 from client import simplecrypt
 from Crypto.PublicKey import RSA
-from client.settingsmanager import settings
 
 import time
-
 
 def EncryptAString(AString, PK):
     """
