@@ -2,7 +2,6 @@ import win32service
 import win32serviceutil
 import win32event
 import win32evtlogutil
-import win32traceutil
 import servicemanager
 import sys
 import os
@@ -55,6 +54,7 @@ class BackupService(win32serviceutil.ServiceFramework):
         from client.torrent import cloud
         from client.tasker import Tasker
         from client.backupcloud import BackupFromCloud, BackupToCloud
+        from client import utility 
 
         def BTC():
             log.info("BTC")

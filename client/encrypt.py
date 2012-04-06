@@ -39,7 +39,7 @@ def EncryptAFile(filein = None, fileout=None, key=None, blocks=1024):
 
     # loop over the file and save to the encrypted version.
     for block in s.EncryptFile(fi):
-        time.sleep(.1)
+        #time.sleep(.1)
         fo.write(block)
 
     fi.close()

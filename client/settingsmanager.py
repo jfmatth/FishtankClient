@@ -24,6 +24,8 @@ import os
 import sys
 import servicemanager
 
+from client import utility
+
 LOCALCHAR = "."
 
 class LocalDict(object):
@@ -205,3 +207,5 @@ else:
 
 # define settings here
 settings = Manager(thefile=sfile)
+
+utility.validate_settings(settings)
