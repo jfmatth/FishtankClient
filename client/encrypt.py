@@ -1,12 +1,14 @@
 """
-Encrypts files
+Encrypt things
 
 """
 
 from client import simplecrypt
 from Crypto.PublicKey import RSA
-
 from client.settingsmanager import settings
+
+import time
+
 
 def EncryptAString(AString, PK):
     """
@@ -22,40 +24,6 @@ def EncryptAString(AString, PK):
     return key.encrypt(AString, 101)
 
 
-# class Encryptafile(object):
-    # """
-    # Encrypts a file with the key specified.
-    
-    # x = Encryptafile("filein.txt", "fileout.enc", "thisisakey")
-    # x.execute()
-    # """
-
-    # def __init__(self, filein, fileout, key=None):
-        # """
-        # key - string to use as an encryption key
-        # filein - full pathname of file to encrypt
-        # fileout - full pathname of encrypted file.
-        # """
-        # if key == None:
-            # raise Exception("Need a key to do this")
-
-        # self.key = key
-        # self.filein = filein
-        # self.fileout = fileout
-        
-    # def execute(self):
-
-        # s = simplecrypt.SimpleCrypt(self.key)
-        
-        # fi = open(self.filein,"rb")
-        # fo = open(self.fileout,"wb")
-        
-        #loop over the file and save to the encrypted version.
-        # for block in s.EncryptFile(fi):
-            # fo.write(block)
-
-        # fi.close()
-        # fo.close()
 def EncryptAFile(filein = None, fileout=None, key=None):
     """
     Encrypts a file with the key specified, using simplecrypt
@@ -68,13 +36,13 @@ def EncryptAFile(filein = None, fileout=None, key=None):
     """
 
     s = simplecrypt.SimpleCrypt(key, BLOCK_SZ=(int(settings["block_sz"]) or 1024) )
-#    s = simplecrypt.SimpleCrypt(key)
 
     fi = open(filein,"rb")
     fo = open(fileout,"wb")
 
     # loop over the file and save to the encrypted version.
     for block in s.EncryptFile(fi):
+        time.sleep(.1)
         fo.write(block)
 
     fi.close()

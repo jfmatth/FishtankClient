@@ -18,5 +18,4 @@ if settings['log_stream']:
     ch.setFormatter(fm)
     log.addHandler(ch)
 
-
 log.info("Logging Started")

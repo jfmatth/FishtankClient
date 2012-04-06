@@ -21,6 +21,8 @@ import urllib
 import httplib
 import ConfigParser
 import os
+import sys
+import servicemanager
 
 LOCALCHAR = "."
 
@@ -93,6 +95,10 @@ class Manager(object):
 
     def __init__(self,thefile="settings.txt"):
         # a link to our local settings file, bootstrap.
+
+        if not os.path.exists(thefile):
+            raise Exception("%s does not exist in %s" % (thefile, os.path.dirname(thefile) ) )
+
         self.LocalSettings = LocalDict(thefile)
         
         # our DB cache for all our settings from the URL /manager/settings
@@ -188,7 +194,14 @@ class Manager(object):
 #            self.DBMSettings[key] = value
             self._urldict()[key] = value
 
+# do some checking for our new environment
+if servicemanager.RunningAsService():
+    if "python.exe" in sys.executable.lower():
+        sfile = os.path.join( os.path.dirname(sys.argv[0]),"settings.txt" )
+    else:
+        sfile = os.path.join( os.path.dirname(sys.executable), "settings.txt" )
+else:
+    sfile = os.path.join(os.path.curdir, "settings.txt")
 
 # define settings here
-
-settings = Manager()
+settings = Manager(thefile=sfile)

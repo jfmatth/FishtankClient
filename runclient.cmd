@@ -1,2 +1,1 @@
-set PYTHONPATH=misc
-misc\python\python.exe backuptest.py
+IF NOT x%fPYTHON%==x %fPYTHON% agent.py

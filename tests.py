@@ -21,6 +21,7 @@ class testSettings(unittest.TestCase):
         self.assertFalse(settings["tracker_ip"] == None, "setting tracker_ip missing")
         self.assertFalse(settings["max_free_perc"] == None, "max_free_perc missing")
         self.assertFalse(settings["min_free_gb"] == None, "min_free_gb missing")
+        self.assertFalse(settings["backupsize"] == None, "backupsize missing")
     
     def testPutandGet(self):
         pass    

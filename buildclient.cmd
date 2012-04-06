@@ -5,6 +5,7 @@
 	:: %1 is our desination folder for client.exe
 	set destzip=%temp%\client%random%.7z
 	set defdest=..\fishtankserver\download
+        set host=None
 	::
 	:: check for 7-zip
 	IF NOT EXIST "C:\program files\7-zip\." ECHO "NO 7-zip" & GOTO :eof
@@ -16,6 +17,14 @@
 		SET exe=%1\\client.exe
 	)
 	
+        :: check for the server address (Http://IP:port)
+        IF x%2==x (
+            ECHO You need to specify the IP of the tracker as the second parameter
+            GOTO :eof
+        ) ELSE (
+            set host = %2
+        )
+        
 	IF EXIST %destzip% ERASE %destzip%
 	IF EXIST %exe% ERASE %exe%
 	
@@ -50,9 +59,9 @@
 	GOTO :eof
 
 :copypython
-	:: add Python
-	ECHO python...
-	%zip% a %destzip% misc\python*.msi > nul
+	:: add Python, we have python already configured the way we want it.
+	ECHO python pre-configured....
+	%zip% a -r %destzip% misc\python > nul
 	
 	GOTO :eof
 
@@ -64,24 +73,23 @@
 	%zip% a %destzip% register.py > nul
 	ECHO   backuptest.py
 	%zip% a %destzip% backuptest.py > nul
-	ECHO   Cypto from misc.
-	%zip% a -r %destzip% misc\Crypto > nul
 	ECHO   runclient.cmd
 	%zip% a %destzip% runclient.cmd > nul
 	ECHO   installclient.cmd
 	%zip% a %destzip% installclient.cmd > nul
-	
-	
+	ECHO   agent.py
+	%zip% a %destzip% agent.py > nul
 
 	GOTO :eof
 
 :copysettings
 	ECHO Settings...
 	::COPY settings.txt %destdir% > nul
-    ECHO [settings] > settings.example
-    ECHO .registerurl = /manager/register/ >> settings.example
-    ECHO .settingurl = /manager/setting/ >> settings.example
-    FOR /F "tokens=1" %%i in ('python buildclient.py') do echo .managerhost = %%i >> settings.example
+        ECHO [settings] > settings.example
+        ECHO .registerurl = /manager/register/ >> settings.example
+        ECHO .settingurl = /manager/setting/ >> settings.example
+::        FOR /F "tokens=1" %%i in ('python buildclient.py') do echo .managerhost = %%i >> settings.example
+        ECHO .managerhost = %host% >> settings.example
 	%zip% a %destzip% settings.example > nul
 
 	GOTO :eof

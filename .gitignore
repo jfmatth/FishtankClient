@@ -2,6 +2,7 @@
 *.sq3
 .project
 .pydevproject
+.idea
 .settings
 *.torrent
 settings.*
@@ -15,3 +16,5 @@ mycache
 cloud/*
 *.msi
 download
+*.komodoproject
+*.spec

@@ -60,22 +60,24 @@ def BackupGenerator(filespec = None,
                     drives   = None,
                     limit    = 100,
                     ):
-    """ A backup generator that returns the filenames of the zipfile and dbmfile of what was backed up
+    """ A generators that returns two filenames:
+        zipfile, dbfile. zipfile is a zip of all files that should be backed up because the CRC changed, or it wasn't 
+        in the fulldb.dbm database.  dbfile is a DBM of the zipfile files
         
-    yields a zipfilename and dbfilename
-    limit - how big of a backup set do u want, in MB
+        filespec - which files to backup (*.txt), but as a python regular expression.
+        temppath - Where to put the temporary files (zip and db)
+        datapath - where does the dbfull.db live?
+        drives   - the outer loop of which locations to backup (C:/, d:/, etc), can be folder qualification too.
+        limit    - how big in MB should each (pre compressed) backup set be before yielding. backed up
     """
     
-    # limit is in count for now, eventually will be a size.
-
     if (filespec == None or temppath == None or datapath == None or drives == None):
         raise Exception("invalid values for Backup")
 
     if not type(drives)==list:
         raise Exception("drives must be of type list") 
-
+    
     fulldbname = os.path.join(datapath, "dbfull.db")
-
     fileregex = re.compile(filespec)
     
     _limit = limit * 1024 * 1024
@@ -93,32 +95,37 @@ def BackupGenerator(filespec = None,
                     fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) 
 
                     if os.path.isfile(fullpath) and fileregex.match(fullpath):
-                        finfo = fileinfo(fullpath)
-                        
-                        if not _dbfull.has_key(fullpath) or not json.loads(_dbfull[fullpath])['crc'] == finfo['crc']:
-                            # it's not in our DB or it's different, then update the DB and the zip
+                        try:
+                            finfo = fileinfo(fullpath)
                             
-                            if _zip == None:
-                                # we need a zip and DBM opened, cause they may have been closed
-                                # when we generated back.
-                                zf, dbf = ZipDBFile(temppath)
-                                _zip    = zipfile.ZipFile(zf, "w", compression=zipfile.ZIP_DEFLATED)
-                                _dbdiff = anydbm.open(dbf, "n")
+                            if not _dbfull.has_key(fullpath) or not json.loads(_dbfull[fullpath])['crc'] == finfo['crc']:
+                                # it's not in our DB or it's different, then update the DB and the zip
+                                
+                                if _zip == None:
+                                    # we need a zip and DBM opened, cause they may have been closed
+                                    # when we generated back.
+                                    zf, dbf = ZipDBFile(temppath)
+                                    _zip    = zipfile.ZipFile(zf, "w", compression=zipfile.ZIP_DEFLATED)
+                                    _dbdiff = anydbm.open(dbf, "n")
+    
+                                sfinfo = json.dumps(finfo)                            
+                                _dbdiff[fullpath] = sfinfo
+                                _zip.write(fullpath)
+    
+                                _size  += finfo['size']
+    
+                                if _size >= _limit:
+                                    # we have "filled" our zip /db combo, yield.
+                                    _zip.close()
+                                    _dbdiff.close()
+                                    _zip = None
+                                    _dbdiff = None
+                                    _size = 0
+                                    yield zf, dbf
 
-                            sfinfo = json.dumps(finfo)                            
-                            _dbdiff[fullpath] = sfinfo
-                            _zip.write(fullpath)
-
-                            _size  += finfo['size']
-
-                            if _size >= _limit:
-                                # we have "filled" our zip /db combo, yield.
-                                _zip.close()
-                                _dbdiff.close()
-                                _zip = None
-                                _dbdiff = None
-                                _size = 0
-                                yield zf, dbf
+                        except Exception as e:
+                            log.critical("%s Exception on %s" % (e, fullpath) )
+ 
 
     # once we have traversed everything, clean up the last of it all.                                
     if not _zip == None:
@@ -132,6 +139,13 @@ def BackupGenerator(filespec = None,
         
         yield zf, dbf
 
+
+
+
+
+##########################
+# OLD CODE BELOW 
+##########################
 
 
 class Backup(object):

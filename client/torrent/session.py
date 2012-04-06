@@ -197,8 +197,6 @@ class Session(object):
                 out += 'download %s/s (%s)' % (self.add_suffix(torr_status.download_rate), 
                                                self.add_suffix(torr_status.total_download))
                 log.debug(out)
-                time.sleep(1)
-                
                 
                 if handle.is_seed():
                     # append to handles if we seed the torrent
