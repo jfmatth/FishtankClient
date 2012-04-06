@@ -134,9 +134,9 @@ class Session(object):
         """
         Configure session settings.  More can be added later...
         """
-        settings = self.session.settings()
-        settings.ignore_limits_on_local_network = False
-        self.session.set_settings(settings)
+        s_settings = self.session.settings()
+        s_settings.ignore_limits_on_local_network = False
+        self.session.set_settings(s_settings)
         
 
     def serve(self, ti):
