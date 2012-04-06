@@ -36,19 +36,16 @@
     :: zip it up over to our %destdir%
     :: cd into the dist\agent directory and put output into dest.
     CD dist\agent
-    PAUSE
     IF EXIST %destdir%\client.exe ERASE %destdir%\client.exe
     %zip% a -sfx %destdir%\client.exe * -r
     IF NOT EXIST %destdir%\client.exe CALL :error "problem generating EXE" & GOTO :EOF
     CD ..\..
 
-    :: clean up
-    
-    :: remove build
+    :: clean up, remove build, log files, warnings and the dist folder too.
     RMDIR build /q/s
     ERASE log*.log
     ERASE warn*.txt
-    :: RMDIR dist /s/q
+    RMDIR dist /s/q
 
     GOTO :eof
 
