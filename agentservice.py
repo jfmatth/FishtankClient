@@ -7,7 +7,7 @@ import servicemanager
 import sys
 import os
 
-class bService(win32serviceutil.ServiceFramework):
+class BackupService(win32serviceutil.ServiceFramework):
     _svc_name_ = "BackupService"
     _svc_display_name_ = "Backup Service for desktops"
     _svc_deps_ = ["EventLog"]
@@ -21,6 +21,10 @@ class bService(win32serviceutil.ServiceFramework):
     def log(self, msg):
         servicemanager.LogInfoMsg(str(msg))
 
+    def event_log(self, msg):
+        servicemanager.LogInfoMsg(str(msg))
+        print "Writting %s to eventlog" % msg
+
     def SvcStop(self):
         # tell Service Manager we are trying to stop (required)
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
@@ -33,12 +37,12 @@ class bService(win32serviceutil.ServiceFramework):
 
     def SvcDoRun(self):
         # Write a 'started' event to the event log... (not required)
-        win32evtlogutil.ReportEvent(self._svc_name_,
-            servicemanager.PYS_SERVICE_STARTED,
-            0,
-            servicemanager.EVENTLOG_INFORMATION_TYPE,
-            (self._svc_name_, '')
-        )
+        #win32evtlogutil.ReportEvent(self._svc_name_,
+        #    servicemanager.PYS_SERVICE_STARTED,
+        #    0,
+        #    servicemanager.EVENTLOG_INFORMATION_TYPE,
+        #    (self._svc_name_, '')
+        #)
 
         self.log("Starting %s" % self._svc_name_)
         self.isAlive = True
@@ -46,14 +50,11 @@ class bService(win32serviceutil.ServiceFramework):
         # this is the start of our code for the agent client for Backup Service.
         # we had to put stuff here, since the curdir gets all screwed up when run normally, odd.
 
-        # start us up in the right directory.
-        os.chdir(os.path.dirname(__file__))
-
         from client.settingsmanager import settings
         from client.logger import log
         from client.torrent import cloud
         from client.tasker import Tasker
-        from backuptest import BackupFromCloud, BackupToCloud
+        from client.backupcloud import BackupFromCloud, BackupToCloud
 
         def BTC():
             log.info("BTC")
@@ -89,6 +90,7 @@ class bService(win32serviceutil.ServiceFramework):
 
         log.debug("Starting the Tasks")
         s.run()
+        # when this returns, the tasker has been stopped, i.e. the service stopped.
 
         log.debug("Stopping the cloud")
         c.stop()    # when this exists, then I guess we've stopped the service?
@@ -97,7 +99,30 @@ class bService(win32serviceutil.ServiceFramework):
         win32event.WaitForSingleObject(self.hWaitStop,win32event.INFINITE)
 
         self.ReportServiceStatus(win32service.SERVICE_STOPPED)
-        return
 
 if __name__ == '__main__':
-    win32serviceutil.HandleCommandLine(bService)
+    # determine how we run?
+    if servicemanager.RunningAsService:
+        # if we are a service, see if we are running bare, or with python as our caller?
+        if "python.exe" in sys.executable.lower():
+            BackupService._exe_name_ = sys.executable
+            BackupService._exe_args_ = '"' + os.path.abspath(sys.argv[0]) + '"'
+            BackupService._path = os.path.dirname(sys.argv[0])
+        else:
+            # otherwise, we could have been complied by pyinstaller.
+            BackupService._exe_name_ = sys.executable
+            BackupService._path = os.path.dirname(sys.executable)
+    
+    if len(sys.argv)==1:
+        servicemanager.Initialize()
+
+        servicemanager.PrepareToHostSingle(BackupService)
+
+        # Now ask the service manager to fire things up for us...
+        servicemanager.StartServiceCtrlDispatcher()
+
+    else:
+        win32serviceutil.HandleCommandLine(BackupService)    
+    
+    
+    #win32serviceutil.HandleCommandLine(bService)

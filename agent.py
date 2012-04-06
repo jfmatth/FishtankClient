@@ -1,14 +1,14 @@
-""" agent.py - our backup agent 
+""" agent.py - our backup agent to test the cloud from command line.
 """
 
 from client.settingsmanager import settings
 from client.logger import log
 from client.torrent import cloud
 from client.tasker import Tasker
-from backuptest import BackupFromCloud, BackupToCloud
+from client.BackupCloud import BackupFromCloud, BackupToCloud
+from client.utility import validate_settings
 
 import os
-
 
 def sigStop():
     """
@@ -24,13 +24,15 @@ def sigStop():
 
 def BTC():
     log.info("BTC")
-    BackupToCloud(c, settings)
+    BackupToCloud(cloud=c, settings=settings, fast=True)
 
 def BFC():
     log.info("BFC")
     BackupFromCloud(c, settings)
 
 if __name__== "__main__":
+
+    validate_settings(settings)  # raises exception if issue.
 
     c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
                     torr_dir = settings["cloud_meta"],
@@ -41,8 +43,8 @@ if __name__== "__main__":
     # main schedule queue.
     log.info("Starting agent")
     
-    s = Tasker(sigStop, 10)
-    s.addtask(BTC, 60)
+    s = Tasker(sigStop, 5)
+    s.addtask(BTC, 10)
     s.addtask(BFC, 45)
 
     # start our cloud()
@@ -51,8 +53,6 @@ if __name__== "__main__":
         
     log.debug("Starting the Tasks")
 
-
-#    Tasks.run()
     s.run()
     
     log.debug("shutting down cloud")
