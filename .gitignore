@@ -16,3 +16,5 @@ mycache
 cloud/*
 *.msi
 download
+*.komodoproject
+*.spec
