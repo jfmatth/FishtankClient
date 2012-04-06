@@ -18,7 +18,6 @@ import zipfile
 import re
 import uuid
 
-
 from client.logger import log
 
 def crcval(fileName):
@@ -26,8 +25,6 @@ def crcval(fileName):
     for eachLine in open(fileName,"rb"):
         prev = zlib.crc32(eachLine, prev)
     return "%X"%(prev & 0xFFFFFFFF)
-
-
 
 def fileinfo(filename):
     """ returns a dict of all the file information we want of a file """
@@ -43,7 +40,6 @@ def fileinfo(filename):
     
     return fi
 
-
 def ZipDBFile(path):
     """ Return a unique pair for zip and db filenames, prefixed with the path """
     tempname = str( uuid.uuid4() )
@@ -52,7 +48,6 @@ def ZipDBFile(path):
     dbfilename  = os.path.join(path, tempname + ".db")
 
     return zipfilename, dbfilename
-
 
 def BackupGenerator(filespec = None,
                     temppath = None,
@@ -116,6 +111,7 @@ def BackupGenerator(filespec = None,
     
                                 if _size >= _limit:
                                     # we have "filled" our zip /db combo, yield.
+                                    log.info("len(_dbdiff) = %s " % len(_dbdiff) )
                                     _zip.close()
                                     _dbdiff.close()
                                     _zip = None
@@ -129,7 +125,8 @@ def BackupGenerator(filespec = None,
 
     # once we have traversed everything, clean up the last of it all.                                
     if not _zip == None:
-        # still here 
+        # still here
+        log.info("len(_dbdiff) = %s " % len(_dbdiff) )
         _zip.close()
         _dbdiff.close()
         _zip = None

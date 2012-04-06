@@ -5,7 +5,7 @@ from client.settingsmanager import settings
 from client.logger import log
 from client.torrent import cloud
 from client.tasker import Tasker
-from client.BackupCloud import BackupFromCloud, BackupToCloud
+from client.backupcloud import BackupFromCloud, BackupToCloud
 from client.utility import validate_settings
 
 import os
@@ -14,7 +14,7 @@ def sigStop():
     """
     returns True if a stop signal was found, in this case, a file in the temp directory for now.
     """
-    log.info("Should I stop?")
+    log.debug("Should I stop?")
     if os.path.exists("C:/temp/stop.txt"):
         os.remove("C:/temp/stop.txt")
         log.info("stopping")
@@ -34,18 +34,27 @@ if __name__== "__main__":
 
     validate_settings(settings)  # raises exception if issue.
 
+    insdir = settings['.installdir']
+    td = os.path.normpath(insdir + settings['cloud_meta'] )
+    dd = os.path.normpath(insdir + settings['cloud_files'] ) 
+    sd = os.path.normpath(insdir + settings['cloud_meta'] )
+    
+    log.info('td = %s' % td)
+    log.info('dd = %s' % dd)
+    log.info('sd = %s' % sd)
+    
     c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
-                    torr_dir = settings["cloud_meta"],
-                    data_dir = settings["cloud_files"],
-                    session_dir = settings["cloud_meta"]
+                    torr_dir = td, 
+                    data_dir = dd,
+                    session_dir = sd,
                     )
 
     # main schedule queue.
     log.info("Starting agent")
     
     s = Tasker(sigStop, 5)
-    s.addtask(BTC, 10)
-    s.addtask(BFC, 45)
+    s.addtask(BTC, 20)
+#    s.addtask(BFC, 45)
 
     # start our cloud()
     log.info("Starting the cloud")

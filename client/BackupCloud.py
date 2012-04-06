@@ -64,19 +64,22 @@ def BackupToCloud(cloud = None, settings = None, fast=False):
 	
 	log.info("BackupToCloud() starting")
 		
+	insdir = settings['.installdir']
+
 	filespec = settings["filespec"]
 	if filespec == None:
 		raise("Can't have a blank filespec")
 	log.info("filespec = %s" % filespec)
 	
-	temppath = settings["temppath"]
-	if temppath == None:
+	if settings["temppath"] == None:
 		raise("No temppath specified")
+	temppath = settings['temppath']
+	
 	log.info("temppath = %s" % temppath)
 	
-	dbpath = settings["dbpath"]
-	if dbpath == None:
+	if settings["dbpath"] == None:
 		raise("no DB path specified")
+	dbpath = os.path.normpath(insdir + settings['dbpath'])
 	log.info("dbpath = %s" % dbpath)
 	
 	if not settings["backupdrives"]==None:
@@ -92,17 +95,18 @@ def BackupToCloud(cloud = None, settings = None, fast=False):
 	
 	pk = settings[".publickey"]
 	
-	cloudpath = settings["cloud_files"]
-	if cloudpath == None:
+	if settings["cloud_files"] == None:
 		raise("no cloud_files specified")
+	cloudpath = os.path.normpath(insdir + settings['cloud_files'])
 	
+	log.info("Starting backup loop")
 	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=10):
 
 		# we should be able to modularize this better, but it is somewhat critical section, 
 		# if any of the items below are interrupted, then the backup will be incomplete.
 		
 		log.debug("zf = %s\n dbf = %s" % (zf, dbf) )
-				
+
 		filein  = zf
 		fileout = os.path.join(cloudpath,os.path.basename(zf) + "-e") 
 	
@@ -151,3 +155,5 @@ def BackupToCloud(cloud = None, settings = None, fast=False):
 		_dbdiff.close()
 		os.remove(dbf)
 		os.remove(zf)
+
+	log.info("BackupToCloud() finished")

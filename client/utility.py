@@ -26,6 +26,8 @@ def validate_settings(settings = None):
     if settings == None:
         raise Exception("No settings variable specified")
         
+    if settings['.installdir'] == None:
+        raise Exception(".installdir missing")
     if settings["block_sz"] == None:
         raise Exception("setting block_sz missing")
     if settings["filespec"] == None:
@@ -50,11 +52,12 @@ def validate_settings(settings = None):
         raise Exception("backupsize missing")
         
     # check our directories, create them if they don't exist.
-    check_dir(settings["temppath"])
-    check_dir(settings["dbpath"])
-    check_dir(settings["cloud_files"])
-    check_dir(settings["cloud_meta"])
+    insdir = settings['.installdir']
+    check_dir(os.path.normpath(settings["temppath"]) )
+    check_dir(os.path.normpath(insdir + settings["dbpath"]) )
+    check_dir(os.path.normpath(insdir + settings["cloud_files"]) )
+    check_dir(os.path.normpath(insdir + settings["cloud_meta"]) )
     
     # check log_path setup, only if it exists.
     if not settings["log_path"] == None:
-        check_dir(settings["log_path"])
+        check_dir(os.path.normpath(insdir + settings["log_path"]) )

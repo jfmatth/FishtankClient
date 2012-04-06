@@ -1,5 +1,5 @@
 import logging
-
+import os
 from client.settingsmanager import settings
 
 log = logging.getLogger(__name__)
@@ -8,7 +8,7 @@ log.setLevel(int(loglevel))
 
 fm = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
 
-file_location = settings["log_path"] or "./"
+file_location = os.path.normpath(settings['.installdir'] +settings["log_path"] ) or "./" 
 fl=logging.FileHandler("%s/client.log" % file_location, mode="w")
 fl.setFormatter(fm)
 log.addHandler(fl)
