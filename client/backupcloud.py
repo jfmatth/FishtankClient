@@ -16,13 +16,14 @@ import anydbm
 import json
 
 def BackupFromCloud( cloud = None, settings = None):
-
 	if cloud == None:
 		raise Exception("No cloud to backup to :) ")
 	
 	if settings == None:
 		raise Exception("No Settings to use :)")
 	
+	log.debug("BackupFromCloud() Starting.")
+
 	percFree = int(settings["max_free_perc"]) / 100.00
 	maxGB = int(settings["min_free_gb"]) * 1024 * 1024 * 1024
 	
@@ -32,7 +33,6 @@ def BackupFromCloud( cloud = None, settings = None):
 	amount = min(int(fs*percFree), int(maxGB))
 	
 	# we will ask for a torrent of size < = amount then.
-	
 	managerhost = settings[".managerhost"]
 	guid = settings[".guid"]
 	HTTPConnection = httplib.HTTPConnection(managerhost)
@@ -52,6 +52,8 @@ def BackupFromCloud( cloud = None, settings = None):
 			# get it from the cloud()
 			log.info("Asing for hash %s" % infohash)
 			cloud.get(infohash)
+			
+	log.debug("BackupFromCloud() finished")
 
 
 def BackupToCloud(cloud = None, settings = None, fast=False):
@@ -100,7 +102,7 @@ def BackupToCloud(cloud = None, settings = None, fast=False):
 	cloudpath = os.path.normpath(insdir + settings['cloud_files'])
 	
 	log.info("Starting backup loop")
-	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=10):
+	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=backupsize):
 
 		# we should be able to modularize this better, but it is somewhat critical section, 
 		# if any of the items below are interrupted, then the backup will be incomplete.

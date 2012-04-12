@@ -1,8 +1,8 @@
 # -*- mode: python -*-
 a = Analysis([os.path.join(HOMEPATH,'support\\_mountzlib.py'), os.path.join(HOMEPATH,'support\\useUnicode.py'), 'agentservice.py'],
-             pathex=['C:\\FishtankClient'])
+             pathex=['C:\\Users\\john\Development\\FishtankClient'])
 b = Analysis([os.path.join(HOMEPATH,'support\\_mountzlib.py'), os.path.join(HOMEPATH,'support\\useUnicode.py'), 'register.py'],
-             pathex=['C:\\FishtankClient'])
+             pathex=['C:\\Users\\john\\Development\\FishtankClient'])
 pyz = PYZ(a.pure + b.pure)
 exe = EXE(pyz,
           a.scripts,

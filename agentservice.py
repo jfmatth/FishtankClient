@@ -11,11 +11,10 @@ class BackupService(win32serviceutil.ServiceFramework):
     _svc_display_name_ = "Backup Service for desktops"
     _svc_deps_ = ["EventLog"]
 
-    isAlive = True
-
     def __init__(self, args):
         win32serviceutil.ServiceFramework.__init__(self, args)
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
+        self.isAlive = False
 
     def log(self, msg):
         servicemanager.LogInfoMsg(str(msg))
@@ -57,11 +56,9 @@ class BackupService(win32serviceutil.ServiceFramework):
         from client import utility 
 
         def BTC():
-            log.info("BTC")
             BackupToCloud(c, settings)
 
         def BFC():
-            log.info("BFC")
             BackupFromCloud(c, settings)
 
         def sigStop():
@@ -70,22 +67,29 @@ class BackupService(win32serviceutil.ServiceFramework):
             """
             return not self.isAlive
 
+        insdir = settings['.installdir']
+        td = os.path.normpath(insdir + settings['cloud_meta'] )
+        dd = os.path.normpath(insdir + settings['cloud_files'] ) 
+        sd = os.path.normpath(insdir + settings['cloud_meta'] )
         c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
-                        torr_dir = settings["cloud_meta"],
-                        data_dir = settings["cloud_files"],
-                        session_dir = settings["cloud_meta"]
+                        torr_dir = td,
+                        data_dir = dd,
+                        session_dir = sd
                         )
 
         # main schedule queue.
-        log.info("Starting agent")
+        log.debug("Starting agent")
 
+        log.debug("Defining Taskter")
         s = Tasker(sigStop, 1)  # we should check ourselves every second?
 
+        log.debug("adding BTC")
         s.addtask(BTC, 60)
+        log.debug("adding BFC")
         s.addtask(BFC, 45)
 
         # start our cloud()
-        log.info("Starting the cloud")
+        log.debug("Starting the cloud")
         c.start()
 
         log.debug("Starting the Tasks")
@@ -96,9 +100,7 @@ class BackupService(win32serviceutil.ServiceFramework):
         c.stop()    # when this exists, then I guess we've stopped the service?
         log.debug("cloud stopped")
 
-        win32event.WaitForSingleObject(self.hWaitStop,win32event.INFINITE)
-
-        self.ReportServiceStatus(win32service.SERVICE_STOPPED)
+        #self.ReportServiceStatus(win32service.SERVICE_STOPPED)
 
 if __name__ == '__main__':
     # determine how we run?

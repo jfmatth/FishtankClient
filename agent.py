@@ -23,16 +23,13 @@ def sigStop():
         return False
 
 def BTC():
-    log.info("BTC")
     BackupToCloud(cloud=c, settings=settings, fast=True)
 
 def BFC():
-    log.info("BFC")
-    BackupFromCloud(c, settings)
+    BackupFromCloud(cloud=c, settings=settings)
 
 if __name__== "__main__":
-
-    validate_settings(settings)  # raises exception if issue.
+    log.info("Starting agent")
 
     insdir = settings['.installdir']
     td = os.path.normpath(insdir + settings['cloud_meta'] )
@@ -50,18 +47,16 @@ if __name__== "__main__":
                     )
 
     # main schedule queue.
-    log.info("Starting agent")
-    
     s = Tasker(sigStop, 5)
-    s.addtask(BTC, 20)
-#    s.addtask(BFC, 45)
+    s.addtask(BFC, 15)
+    s.addtask(BTC, 160)
+    
 
     # start our cloud()
     log.info("Starting the cloud")
     c.start()
         
     log.debug("Starting the Tasks")
-
     s.run()
     
     log.debug("shutting down cloud")

@@ -71,6 +71,12 @@ def BackupGenerator(filespec = None,
 
     if not type(drives)==list:
         raise Exception("drives must be of type list") 
+
+    log.debug("BG:filespec = %s" % filespec)
+    log.debug("BG:temppath = %s" % temppath)
+    log.debug("BG:datapath = %s" % datapath)
+    log.debug("BG:drives = %s" % drives)
+    log.debug("BG:limit = %s" % limit)
     
     fulldbname = os.path.join(datapath, "dbfull.db")
     fileregex = re.compile(filespec)
