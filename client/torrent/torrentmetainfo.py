@@ -27,8 +27,6 @@ class TorrentMetaInfo(object):
         tracker.  If we are putting files, this should be None.
         """
         
-        log.debug("Initializing TorrentMetaInfo: %s %s %s %s %s" %(torr_save_path, file_save_path, tracker, backup_file, torr_file))
-        
         # values defined by this class
         self.torr_path = self.valid_dir(torr_save_path)
         self.file_path = self.valid_dir(file_save_path)

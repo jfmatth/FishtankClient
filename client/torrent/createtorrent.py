@@ -69,8 +69,6 @@ class CreateTorrent(object):
         self.ti.info      = lt.torrent_info(self.ti.torr_name)
         self.ti.info_hash = self.ti.info.info_hash()
         
-        log.debug("New torrent details: %s" % self.ti)
-        
         # Return the TorrentMetaInfo Object
         return self.ti
         
