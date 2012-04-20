@@ -23,6 +23,7 @@ class Session(object):
     def __init__(self, 
                  session_dir, 
                  db_name,
+                 timeout=10,
                  ):
         self.session = None
         self.session_dir = session_dir
@@ -32,6 +33,7 @@ class Session(object):
         self.alerts = []
         self.max_upload = 0
         self.max_download = 0
+        self.timeout = timeout
         
         # Randomly generated before serving
         self.to_port = -1
@@ -186,9 +188,11 @@ class Session(object):
             
             # wait for seeding to complete before returning.  Check callback at each pass.
             log.debug("Seeding torrent.")
+            start_time = int(time.mktime(time.localtime()))
             while True:
-                if not self.callback():
-                    return False
+                # No longer using?
+                #if not self.callback():
+                #    return False
                 
                 torr_status = handle.status()
                 out = '%s ' % handle.get_torrent_info().name()[:40] + ' '
@@ -196,7 +200,7 @@ class Session(object):
                 out += '%2.0f%% ' % (torr_status.progress * 100) + ' '
                 out += 'download %s/s (%s)' % (self.add_suffix(torr_status.download_rate), 
                                                self.add_suffix(torr_status.total_download))
-                log.debug(out)
+                #log.debug(out)
                 
                 if handle.is_seed():
                     # append to handles if we seed the torrent
@@ -208,6 +212,14 @@ class Session(object):
                     self.stor_torr(info_hash, file_name)
                     
                     return True
+                
+                # timeout if this takes longer than self.timeout seconds
+                curr_time = int(time.mktime(time.localtime()))
+                if (curr_time - start_time) > self.timeout:
+                    log.debug("Timing out your torrent...")
+                    return False
+                
+                time.sleep(.1)
             
         else:
             log.debug("Torrent exists in session.")

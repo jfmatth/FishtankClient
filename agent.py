@@ -49,7 +49,7 @@ if __name__== "__main__":
     # main schedule queue.
     s = Tasker(sigStop, 5)
     s.addtask(BFC, 15)
-    s.addtask(BTC, 160)
+    s.addtask(BTC, 10)
     
 
     # start our cloud()

@@ -86,7 +86,7 @@ class BackupService(win32serviceutil.ServiceFramework):
         log.debug("adding BTC")
         s.addtask(BTC, 60)
         log.debug("adding BFC")
-        s.addtask(BFC, 45)
+        s.addtask(BFC, 90)
 
         # start our cloud()
         log.debug("Starting the cloud")
