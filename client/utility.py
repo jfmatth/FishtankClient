@@ -28,8 +28,8 @@ def validate_settings(settings = None):
 
     # if there is a .guid entry, then we are registered, otherwise, not.
     if not settings['.guid'] == None:
-        if settings["block_sz"] == None:
-            raise Exception("setting block_sz missing")
+#        if settings["block_sz"] == None:
+#            raise Exception("setting block_sz missing")
         if settings["filespec"] == None:
             raise Exception("setting filespec missing")
         if settings["temppath"] == None:

@@ -20,7 +20,7 @@ def EncryptAString(AString, PK):
     return key.encrypt(AString, 101)
 
 
-def EncryptAFile(filein = None, fileout=None, key=None, blocks=1024):
+def EncryptAFile(filein = None, fileout=None, key=None, blocks=4096):
     """
     Encrypts a file with the key specified, using simplecrypt
 

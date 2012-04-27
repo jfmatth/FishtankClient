@@ -6,10 +6,10 @@ log = logging.getLogger(__name__)
 loglevel = settings["log_level"] or 50 
 log.setLevel(int(loglevel))
 
-fm = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
+fm = logging.Formatter('%(asctime)s - %(levelname)s:%(filename)s.%(funcName)s(%(lineno)d) - %(message)s')
 
 file_location = os.path.normpath(settings['.installdir'] +settings["log_path"] ) or "./" 
-fl=logging.FileHandler("%s/client.log" % file_location, mode="w")
+fl=logging.FileHandler("%s/client.log" % file_location, mode="a")
 fl.setFormatter(fm)
 log.addHandler(fl)
 
