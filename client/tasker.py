@@ -26,28 +26,32 @@ class Tasker(object):
         if self._sigstop():
             self._stop = True
             
-    def taskrun(self, callable, delay):
+    def taskrun(self, thecall, delay):
         """
         this is what is called from the runtask scheduler to run the task at the time.  so it calls
-        the callable, and then reschedules itself to be run in delay time.
+        the thecall, and then reschedules itself to be run in delay time.
         """
         try:
-            callable()
+            thecall()
             if self._stop:
                 self.allStop()
             else:
-                self.addtask(callable, delay)
+                self.addtask(thecall, delay)
                 
         except:
             self.allStop()
 
-    def addtask(self, callable, delay):
+    def addtask(self, thecall, delay):
         """ 
         adds a task to the scheduler via the taskrun wrapper.
         """
-        self.runtasks.enter(delay, 1, self.taskrun, (callable, delay) )
+        if delay > 0:
+            self.runtasks.enter(delay, 1, self.taskrun, (thecall, delay) )
 
     def run(self):
+        if len(self.runtasks.queue)== 0:
+            return
+
         self._stop = False
         # ready to run, add our stop to the queue
         self.addtask(self.checkStop, self._sigdelay)

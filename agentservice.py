@@ -1,37 +1,42 @@
 import win32service
 import win32serviceutil
 import win32event
-import win32evtlogutil
 import servicemanager
+
 import sys
 import os
+
 
 class BackupService(win32serviceutil.ServiceFramework):
     _svc_name_ = "BackupService"
     _svc_display_name_ = "Backup Service for desktops"
     _svc_deps_ = ["EventLog"]
 
+
     def __init__(self, args):
         win32serviceutil.ServiceFramework.__init__(self, args)
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
         self.isAlive = False
+        self.pythonlog = None       # pointer to log
 
     def log(self, msg):
         servicemanager.LogInfoMsg(str(msg))
 
     def event_log(self, msg):
         servicemanager.LogInfoMsg(str(msg))
-        print "Writting %s to eventlog" % msg
 
     def SvcStop(self):
         # tell Service Manager we are trying to stop (required)
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
 
-        # set the event to call
-        win32event.SetEvent(self.hWaitStop)
-
         self.log('Stoping service %s' % self._svc_name_)
         self.isAlive = False
+        self.pythonlog.debug("isalive = %s" % self.isAlive)
+
+        # set the event to call
+        self.pythonlog.debug("setting hWaitStop")
+        win32event.SetEvent(self.hWaitStop)
+        self.pythonlog.debug("hWaitStop set")
 
     def SvcDoRun(self):
         # Write a 'started' event to the event log... (not required)
@@ -53,19 +58,21 @@ class BackupService(win32serviceutil.ServiceFramework):
         from client.torrent import cloud
         from client.tasker import Tasker
         from client.backupcloud import BackupFromCloud, BackupToCloud
-        from client import utility 
 
-        def BTC():
-            BackupToCloud(c, settings)
-
-        def BFC():
-            BackupFromCloud(c, settings)
+        # try to put our logger on the class log variable
+        self.pythonlog = log
 
         def sigStop():
             """
             Stop function for main scheuler loop
             """
             return not self.isAlive
+
+        def BTC():
+            BackupToCloud(cloud=c, settings=settings, stopfunc=sigStop)
+
+        def BFC():
+            BackupFromCloud(c, settings)
 
         insdir = settings['.installdir']
         td = os.path.normpath(insdir + settings['cloud_meta'] )
@@ -78,29 +85,32 @@ class BackupService(win32serviceutil.ServiceFramework):
                         )
 
         # main schedule queue.
-        log.debug("Starting agent")
+        log.info("Starting agent")
 
-        log.debug("Defining Taskter")
-        s = Tasker(sigStop, 1)  # we should check ourselves every second?
+        log.debug("Defining Tasker")
+        s = Tasker(sigStop, int(settings["sigstop"] or 5) )  # we should check ourselves every second?
 
         log.debug("adding BTC")
-        s.addtask(BTC, 60)
+        s.addtask(BTC, int(settings["btctime"] or 0) )
+        
         log.debug("adding BFC")
-        s.addtask(BFC, 90)
+        s.addtask(BFC, int(settings["bfctime"] or 0) )
 
         # start our cloud()
-        log.debug("Starting the cloud")
+        log.info("Starting the cloud")
         c.start()
 
-        log.debug("Starting the Tasks")
+        log.info("Starting the Tasks")
+        log.debug("queue list : %s" % (s.runtasks.queue) )
         s.run()
         # when this returns, the tasker has been stopped, i.e. the service stopped.
-
-        log.debug("Stopping the cloud")
+        log.info("Tasks stopped")
+        
+        log.info("Stopping the cloud")
         c.stop()    # when this exists, then I guess we've stopped the service?
-        log.debug("cloud stopped")
+        log.info("cloud stopped")
 
-        #self.ReportServiceStatus(win32service.SERVICE_STOPPED)
+        self.log("%s Stopped" % self._svc_name_)
 
 if __name__ == '__main__':
     # determine how we run?
