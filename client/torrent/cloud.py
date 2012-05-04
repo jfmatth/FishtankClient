@@ -165,7 +165,7 @@ class Cloud(object):
         
         # Upload torrent to tracker.  Return false if the upload fails.
         if not self.my_tracker.upload_torrent(ti):
-            log.debug("Failed to upload torrent to tracker.")
+            log.error("Failed to upload torrent to tracker.")
             return False
 
         # Serve the torrent

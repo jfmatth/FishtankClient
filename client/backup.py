@@ -77,84 +77,94 @@ def BackupGenerator(filespec = None,
     log.debug("temppath = %s" % temppath)
     log.debug("datapath = %s" % datapath)
     log.debug("drives = %s" % drives)
-    
-    fulldbname = os.path.join(datapath, "dbfull.db")
-    fileregex = re.compile(filespec)
-    
-    _limit = limit * 1024 * 1024
-    log.debug("filesize = %s" % _limit)
-    _size = 0 
-    _zip    = None
-    _dbdiff = None
-    _dbfull = anydbm.open(fulldbname, "c")
 
-    _count = 0
-
-    # define a variable to stop us backing up, cause the runbackup() could be "expensive"
-    stoprunning = False
-
-    for currdir in drives:
-        if stoprunning:
-            break
+    try:
+        fulldbname = os.path.join(datapath, "dbfull.db")
+        fileregex = re.compile(filespec)
         
-        if len(currdir) != 0:
-            
-            for root, dirs, files in os.walk(currdir):
-                
-                if stopbackup():
-                    stoprunning = True
-                    break
-                
-                for f in files:
-                    fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) 
-
-                    if os.path.isfile(fullpath) and fileregex.match(fullpath):
-                        try:
-                            finfo = fileinfo(fullpath)
-                            
-                            if not _dbfull.has_key(fullpath) or not json.loads(_dbfull[fullpath])['crc'] == finfo['crc']:
-                                # it's not in our DB or it's different, then update the DB and the zip
-                                
-                                if _zip == None:
-                                    # we need a zip and DBM opened, cause they may have been closed
-                                    # when we generated back.
-                                    zf, dbf = ZipDBFile(temppath)
-                                    _zip    = zipfile.ZipFile(zf, "w", compression=zipfile.ZIP_DEFLATED)
-                                    _dbdiff = anydbm.open(dbf, "n")
-    
-                                sfinfo = json.dumps(finfo)                            
-                                _dbdiff[fullpath] = sfinfo
-                                _zip.write(fullpath)
-    
-                                _size  += finfo['size']
-    
-                                if _size >= _limit:
-                                    # we have "filled" our zip /db combo, yield.
-                                    log.info("len(_dbdiff) = %s " % len(_dbdiff) )
-                                    _zip.close()
-                                    _dbdiff.close()
-                                    _zip = None
-                                    _dbdiff = None
-                                    _size = 0
-                                    yield zf, dbf
-
-                        except Exception as e:
-                            log.critical("%s Exception on %s" % (e, fullpath) )
- 
-
-    if stoprunning:
-        log.debug("Backup stopped by stoprunning")
-        
-    # once we have traversed everything, clean up the last of it all.                                
-    if not _zip == None:
-        # still here
-        log.info("len(_dbdiff) = %s " % len(_dbdiff) )
-        _zip.close()
-        _dbdiff.close()
-        _zip = None
+        _limit = limit * 1024 * 1024
+        log.debug("filesize = %s" % _limit)
+        _size = 0 
+        _zip    = None
         _dbdiff = None
-        _dbfull.close()
-        _dbfull = None
+        _dbfull = anydbm.open(fulldbname, "c")
+    
+        _count = 0
+    
+        # define a variable to stop us backing up, cause the runbackup() could be "expensive"
+        stoprunning = False
+    
+        log.debug("Starting loop over drives")
         
-        yield zf, dbf
+        for currdir in drives:
+            if stoprunning:
+                break
+        
+            log.debug("currdir %s in drives" % currdir)
+                
+            if len(currdir) != 0:
+                
+                for root, dirs, files in os.walk(currdir):
+                    
+                    if stopbackup():
+                        stoprunning = True
+                        break
 
+                    for f in files:
+                        fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) 
+    
+                        if os.path.isfile(fullpath) and fileregex.match(fullpath):
+                            try:
+                                finfo = fileinfo(fullpath)
+                                
+                                if not _dbfull.has_key(fullpath) or not json.loads(_dbfull[fullpath])['crc'] == finfo['crc']:
+                                    # it's not in our DB or it's different, then update the DB and the zip
+                                    
+                                    if _zip == None:
+                                        # we need a zip and DBM opened, cause they may have been closed
+                                        # when we generated back.
+                                        zf, dbf = ZipDBFile(temppath)
+                                        _zip    = zipfile.ZipFile(zf, "w", compression=zipfile.ZIP_DEFLATED)
+                                        _dbdiff = anydbm.open(dbf, "n")
+        
+                                    sfinfo = json.dumps(finfo)                            
+                                    _dbdiff[fullpath] = sfinfo
+                                    _zip.write(fullpath)
+        
+                                    _size  += finfo['size']
+        
+                                    if _size >= _limit:
+                                        # we have "filled" our zip /db combo, yield.
+                                        log.info("len(_dbdiff) = %s " % len(_dbdiff) )
+                                        _zip.close()
+                                        _dbdiff.close()
+                                        _zip = None
+                                        _dbdiff = None
+                                        _size = 0
+                                        yield zf, dbf
+    
+                            except Exception as e:
+                                log.critical("%s Exception on %s" % (e, fullpath) )
+     
+        log.debug("Done looping over drives")
+
+    
+        if stoprunning:
+            log.debug("Backup stopped by stoprunning")
+            
+        # once we have traversed everything, clean up the last of it all.                                
+        if not _zip == None:
+            # still here
+            log.info("len(_dbdiff) = %s " % len(_dbdiff) )
+            _zip.close()
+            _dbdiff.close()
+            _zip = None
+            _dbdiff = None
+            _dbfull.close()
+            _dbfull = None
+            
+            yield zf, dbf
+    except:
+        log.exception("Error in BackupGenerator")
+        
+        raise Exception("Error in BackupGenerator")

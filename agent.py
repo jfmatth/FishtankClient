@@ -62,7 +62,11 @@ if __name__== "__main__":
     
     log.debug("Starting the Tasks")
     log.debug("queue list : %s" % (s.runtasks.queue) )
-    s.run()
+    
+    try:
+        s.run()
+    except:
+        log.exception("Error from Tasker")
     
     log.debug("shutting down cloud")
     c.stop()

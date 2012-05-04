@@ -67,12 +67,14 @@ class URLDict(object):
         self.guid = guid
         
         # define our connection to 
-        self.conn = httplib.HTTPConnection(self.host)
+#        self.conn = httplib.HTTPConnection(self.host)
            
     def __getitem__(self, key):
+        conn = httplib.HTTPConnection(self.host)
+        
         ## call the URL to get the value
-        self.conn.request("GET", self.url + self.guid + "/" + key + "/")
-        response = self.conn.getresponse()
+        conn.request("GET", self.url + self.guid + "/" + key + "/")
+        response = conn.getresponse()
 
         if response.status != 200:
             return None
@@ -80,11 +82,13 @@ class URLDict(object):
         return response.read()
 
     def __setitem__(self, key, value):
+        conn = httplib.HTTPConnection(self.host)
+        
         ## POST our new value.
         params = urllib.urlencode({'value': value})
         headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
-        self.conn.request("POST", self.url + self.guid + "/" + key + "/", params, headers)
-        response = self.conn.getresponse()
+        conn.request("POST", self.url + self.guid + "/" + key + "/", params, headers)
+        response = conn.getresponse()
         if response.status != 200:
             raise Exception("Error setting value for %s, response = %s" % (key, response.read()) )
 

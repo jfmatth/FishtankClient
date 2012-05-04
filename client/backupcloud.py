@@ -15,7 +15,10 @@ import os
 import anydbm
 import json
 
-def BackupFromCloud( cloud = None, settings = None):
+def BackupFromCloud( cloud = None, 
+					 settings = None 
+					):
+	
 	if cloud == None:
 		raise Exception("No cloud to backup to :) ")
 	
@@ -28,7 +31,7 @@ def BackupFromCloud( cloud = None, settings = None):
 	maxGB = int(settings["min_free_gb"]) * 1024 * 1024 * 1024
 
 	#calculate free space
-	fs = utility.get_free_space("/")
+	fs = utility.get_free_space("\\")
 	
 	amount = min(int(fs*percFree), int(maxGB))
 
@@ -56,7 +59,10 @@ def BackupFromCloud( cloud = None, settings = None):
 	log.debug("BackupFromCloud() finished")
 
 
-def BackupToCloud(cloud = None, settings = None, stopfunc=None):
+def BackupToCloud(	cloud = None, 
+					settings = None, 
+					stopfunc=None
+				):
 	
 	if cloud == None:
 		log.exception("no cloud to backup to")

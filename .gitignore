@@ -20,3 +20,4 @@ download
 warnbuild.txt
 build/*
 dist/*
+stop.cmd

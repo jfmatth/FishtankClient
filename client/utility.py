@@ -2,15 +2,21 @@ import os
 import platform
 import ctypes
 
-def get_free_space(folder):
+import win32file
+
+def get_free_space(drive):
     """ Return folder/drive free space (in bytes)
     """
-    if platform.system() == 'Windows':
-        free_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
-        return free_bytes.value
-    else:
-        return os.statvfs(folder).f_bfree
+#    if platform.system() == 'Windows':
+#        free_bytes = ctypes.c_ulonglong(0)
+#        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+#        return free_bytes.value
+#    else:
+#        return os.statvfs(folder).f_bfree    
+    fb, tb, tfb = win32file.GetDiskFreeSpaceEx(drive)
+
+    return tfb
+        
         
 def validate_settings(settings = None):
     # validate all settings in a settings session
