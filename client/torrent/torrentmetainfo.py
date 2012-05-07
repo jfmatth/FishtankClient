@@ -56,12 +56,12 @@ class TorrentMetaInfo(object):
         # set tracker
         self.tracker = tracker 
         
-    def valid_dir(self, dir):
+    def valid_dir(self, my_dir):
         """
         Check if we have a valid directory, or raise an exception.
         """
-        if dir and os.path.isdir(dir):
-            return dir.rstrip("/").rstrip("\\")  # path where torrent will be stored, strip trailing slashes
+        if my_dir and os.path.isdir(my_dir):
+            return my_dir.rstrip("/").rstrip("\\")  # path where torrent will be stored, strip trailing slashes
         else:
             raise Exception("Did not specify a valid directory.")
         
@@ -70,13 +70,13 @@ class TorrentMetaInfo(object):
         Check if a torrent file exists as a file.
         """
         
-        if file and os.path.isfile(path_to_torrent):
+        if os.path.isfile(path_to_torrent):
             return path_to_torrent
         else:
             return None
 
     def __str__(self):
-        return self.torr_name
+        return os.path.basename(self.torr_name)
 
     def get_info(self):
         return self.info

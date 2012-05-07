@@ -312,42 +312,45 @@ class Cloud(object):
         Start the cloud from a saved state
         """
         
+        # update the client status on the tracker to show we've started
         self.my_tracker.update_client_status(self.guid, "start")
         
+        # if we're already serving, just return
         if self.serving():
             log.debug("Cloud already started.")
-            return False
+            return
         
-        # Open our database, and grind through it.
-        try:
-            self.db = anydbm.open(self.torr_db, 'c')
-        except:
-            return False
+        # get our on record list of torrents from the tracker
+        my_torrents = self.my_tracker.get_attachedtors(self.guid)
         
+        # serve those torrents!
         flag = 0
-        
-        for info_hash, filename in self.db.iteritems():
-            log.debug("Loading... %s %s..." % (info_hash, filename,))
-            print os.path.join(self.torr_dir, filename+self.ext)
+        bad_torrents = []
+        for filename in my_torrents:
+            log.debug("Loading... %s" % (filename,))
             ti = TorrentMetaInfo(self.torr_dir, self.data_dir, self.my_tracker.tracker_ip, filename, str(filename+self.ext))
             
             # if we have it, and the tracker has it, serve it
             if not ti.is_valid_torr():
-                log.debug("Torrent invalid: %s, %s." % (info_hash, filename, ))
-                self.unstor_torr(info_hash)
-            elif not self.my_tracker.has_torrent(ti):
-                log.debug("Torrent does not exist on tracker: %s, %s." % (str(ti.info_hash), filename, ))
-                self.unstor_torr(info_hash)
+                log.debug("Torrent invalid: %s" % filename)
+                bad_torrents.append(filename)
             else:
                 self.session.serve(ti)
                 flag = 1                # serve at least one torrent...
-                
-        self.db.close()
-        if flag:
-            return True
-        else:
-            log.debug("Nothing in the database to serve.")
-            return False
+        
+        # if there were no torrents returned, then just start the cloud with nothing.
+        if not flag:
+            log.debug("Empty database, starting cloud serving no torrents.")
+            self.session.serve()
+        
+        # update the tracker with torrents not on local disk
+        if bad_torrents:
+            log.debug("bad torrents found, removing")
+            print "here are my removed torrents"
+            print self.my_tracker.detachtors(self.guid, bad_torrents)
+            
+            
+            
     
     def is_serving(self):
         """
@@ -412,12 +415,4 @@ class Cloud(object):
             else:
                 return True
 
-    def show_db(self):
-        """
-        Enumerate all values in our db
-        """
-        self.db = anydbm.open(self.torr_db, 'c')
-        for info_hash, filename in self.db.iteritems():
-            print info_hash, " ", filename
-        self.db.close()
         
