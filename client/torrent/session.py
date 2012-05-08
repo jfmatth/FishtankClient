@@ -141,26 +141,31 @@ class Session(object):
         self.session.set_settings(s_settings)
         
 
-    def serve(self, ti):
+    def serve(self, ti=None):
         """
         Create session.  Add torrent to session if it doesn't already exist.
         
         Parameters
         ti: TorrentMetaInfo object
         """
-        
-        log.info("Serving torrent %s from %s" % (ti.file_path, ti.torr_path))
 
         self._check_callback()
         
-        if not ti.is_valid_torr():
-            log.debug("No torrent specified in TorrentMetaInfo")
-            return False
+        #if not ti.is_valid_torr():
+        #    log.debug("Invalid specified in TorrentMetaInfo")
+        #    return False
         
-        # start the session if it hasn't been already
+        # start the session if it hasn't been already.
+        # if ti is none, assume we're starting the cloud with no active torrents to serve.  Subsequent
+        # calls should provide a ti to serve.
         if not self.session:
-            log.debug("No session exists, starting...")
             self._configure_session()
+            
+            if ti == None:
+                return True     # don't go any further, becuase we don't currently have torrents to serve.
+        else:
+            if ti == None:
+                return False
             
         # check if we're serving this torrent, and if not, add it to the session
         th = self.session.find_torrent(ti.info_hash)

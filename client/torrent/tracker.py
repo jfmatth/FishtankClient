@@ -6,6 +6,8 @@ import logging
 import os
 import socket
 import sys
+from django.core import serializers
+import json
 
 # setup 'ma logging
 #log = logging.getLogger("cloud.tracker")
@@ -17,13 +19,16 @@ class Tracker(object):
     The tracker class is responsible for talking to the real Tracker.
     """
     
-    def __init__(self, tracker="10.0.0.1:8000", 
+    def __init__(self, 
+                 tracker="10.0.0.1:8000", 
                  announce_url="/backup/announce", 
                  checkt_url="/backup/check/?info_hash=", 
                  upload_url="/backup/upload/", 
                  download_url="/backup/download/",
                  checku_url="/backup/check/?uuid=",
                  status_url="/backup/status/",
+                 attachedtorrs_url="/backup/attachedtorrs",
+                 detachtorrs_url="/backup/detachtorrs",
                  ):
         """
         
@@ -47,6 +52,8 @@ class Tracker(object):
         self.upload_url = upload_url
         self.download_url = download_url
         self.status_url = status_url
+        self.attachedtorrs_url = attachedtorrs_url
+        self.detachtorrs_url = detachtorrs_url
         
         # Values specific to posting data in upload_torrent()
         self.post_file_path = "file_path"
@@ -212,7 +219,37 @@ class Tracker(object):
         Helper function for encode_multipart_formdata.  Returns mimetype.
         """
         return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-    
+
+    def get_attachedtors(self, my_guid):
+        """
+        Get a list of torrents associated with a guid, from the tracker.
+        """        
+        
+        torrents_on_tracker = self.send_url(self.attachedtorrs_url + "/" + str(my_guid))
+        torrents_on_tracker = json.loads(torrents_on_tracker)
+        
+        if "not found" in torrents_on_tracker:
+            log.debug("Can't get torrents.  GUID %s not found on tracker." % my_guid)
+            return []
+        else:
+            return torrents_on_tracker
+        
+    def detachtors(self, my_guid, torrent_list):
+        """
+        Takes a list of torrents and sends them to the tracker to disassociate from the client.
+        """
+        
+        #params = urllib.urlencode(json.dumps({"torrents": torrent_list}))
+        #params = json.dumps("thisisatest") #{"torrents": "thisisatest"})
+        tl_serialized = json.dumps(torrent_list)
+        params = urllib.urlencode({"torrents": tl_serialized})
+        url = "http://" + self.tracker_ip + self.detachtorrs_url + "/" + str(my_guid)
+        #headers = {'Content-Type': 'application/json'}
+        
+        response = urllib2.urlopen(url=url, data=params)
+        data = response.read()
+        response.close()
+        return data    
     
     ##########################################################
     # Serve Files / Download torrents from tracker 
