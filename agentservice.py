@@ -88,8 +88,8 @@ class BackupService(win32serviceutil.ServiceFramework):
         log.info("Starting agent")
 
         log.debug("Defining Tasker")
-        s = Tasker(sigStop, int(settings["sigstop"] or 5) )  # we should check ourselves every second?
-
+        s = Tasker(sigStop, int(settings["sigstop"] or 5) )  
+        
         log.debug("adding BTC")
         s.addtask(BTC, int(settings["btctime"] or 0) )
         

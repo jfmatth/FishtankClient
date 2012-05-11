@@ -31,15 +31,12 @@ class Tasker(object):
         this is what is called from the runtask scheduler to run the task at the time.  so it calls
         the thecall, and then reschedules itself to be run in delay time.
         """
-        try:
-            thecall()
-            if self._stop:
-                self.allStop()
-            else:
-                self.addtask(thecall, delay)
-                
-        except:
+        thecall()
+        if self._stop:
             self.allStop()
+        else:
+            self.addtask(thecall, delay)
+                
 
     def addtask(self, thecall, delay):
         """ 
