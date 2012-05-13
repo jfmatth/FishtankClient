@@ -6,7 +6,6 @@ import logging
 import os
 import socket
 import sys
-from django.core import serializers
 import json
 
 # setup 'ma logging

@@ -22,12 +22,10 @@ class Session(object):
     
     def __init__(self, 
                  session_dir, 
-                 db_name,
                  timeout=10,
                  ):
         self.session = None
         self.session_dir = session_dir
-        self.torr_db = os.path.join(session_dir, db_name)
         self.db = None                 # pointer to our torrent DB
         self.handles = []
         self.alerts = []
@@ -213,7 +211,7 @@ class Session(object):
                     # We're seeding the torrent, so start tracking nit.
                     info_hash = str(handle.info_hash())
                     file_name = str(handle.name())
-                    self.stor_torr(info_hash, file_name)
+                    #self.stor_torr(info_hash, file_name)
                     
                     return True
                 
@@ -332,54 +330,54 @@ class Session(object):
     # Database functions
     #        
     
-    def stor_torr(self, info_hash, torr_name):
-        """
-        Store torrents we're serving in the database.  If it's already in our database, just
-        ignore it.  Pairs are stored as key => infohash, value=>torr_name
-        
-        Parameters
-        torr_name: file name of torrent (string)
-        info_hash: info hash of torrent (string)
-        """
-        self.db = anydbm.open(self.torr_db, 'c')
-        if not self.db.has_key(info_hash):
-            self.db[info_hash] = torr_name
-            log.debug("info_hash %s, torr_name: %s" % (info_hash, torr_name,))
-        self.db.close()
-        
-    def unstor_torr(self, info_hash):
-        """
-        Delete a torrent from our database.
-        
-        Parameters
-        info_hash: info hash of torrent to delete
-        
-        Returns
-        True if deleted.
-        False if not deleted, or failure.
-        """
-        try:
-            self.db = anydbm.open(self.torr_db, 'w')
-        except:
-            log.debug("Failed opening database for key removal.")
-            return False
-        else:
-            try:
-                del self.db[info_hash]
-            except:
-                log.debug("Failed removing key.")
-                return False
-            else:
-                return True
-
-    def show_db(self):
-        """
-        Enumerate all values in our db
-        """
-        self.db = anydbm.open(self.torr_db, 'c')
-        for info_hash, filename in self.db.iteritems():
-            print info_hash, " ", filename
-        self.db.close()
+#    def stor_torr(self, info_hash, torr_name):
+#        """
+#        Store torrents we're serving in the database.  If it's already in our database, just
+#        ignore it.  Pairs are stored as key => infohash, value=>torr_name
+#        
+#        Parameters
+#        torr_name: file name of torrent (string)
+#        info_hash: info hash of torrent (string)
+#        """
+#        self.db = anydbm.open(self.torr_db, 'c')
+#        if not self.db.has_key(info_hash):
+#            self.db[info_hash] = torr_name
+#            log.debug("info_hash %s, torr_name: %s" % (info_hash, torr_name,))
+#        self.db.close()
+#        
+#    def unstor_torr(self, info_hash):
+#        """
+#        Delete a torrent from our database.
+#        
+#        Parameters
+#        info_hash: info hash of torrent to delete
+#        
+#        Returns
+#        True if deleted.
+#        False if not deleted, or failure.
+#        """
+#        try:
+#            self.db = anydbm.open(self.torr_db, 'w')
+#        except:
+#            log.debug("Failed opening database for key removal.")
+#            return False
+#        else:
+#            try:
+#                del self.db[info_hash]
+#            except:
+#                log.debug("Failed removing key.")
+#                return False
+#            else:
+#                return True
+#
+#    def show_db(self):
+#        """
+#        Enumerate all values in our db
+#        """
+#        self.db = anydbm.open(self.torr_db, 'c')
+#        for info_hash, filename in self.db.iteritems():
+#            print info_hash, " ", filename
+#        self.db.close()
         
     def pause(self):
         """Check if the session object exists, and pause it if so. """
@@ -405,7 +403,7 @@ class Session(object):
         
         # save session settings here
     
-    # incomplete
+    # incomplete, unused?
     def load_session(self, torr_dir, data_dir, tracker_ip, ext):
         """
         Load a session from a saved state.

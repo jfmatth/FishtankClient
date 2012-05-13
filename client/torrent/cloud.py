@@ -65,6 +65,7 @@ data
 """
 
 import os
+import glob
 #import logging # replaced with logger import below
 from client.logger import log
 from tracker import Tracker
@@ -122,14 +123,16 @@ class Cloud(object):
         self.torr_dir = torr_dir
         self.ext = ext
         
-        self.torr_db = os.path.join(session_dir, db_name)
+        #self.torr_db = os.path.join(session_dir, db_name)
+        self.torr_db = os.path.join(session_dir)
         self.db = None                 # pointer to our torrent DB
         
         # setup our tracker
         self.my_tracker = Tracker(tracker_ip)
         
         # setup our session
-        self.session = Session(session_dir, db_name)
+        #self.session = Session(session_dir, db_name)
+        self.session = Session(session_dir)
         self.session.register(self.callback)
         self.session.configure_rates(rate)
         
@@ -323,6 +326,18 @@ class Cloud(object):
         # get our on record list of torrents from the tracker
         my_torrents = self.my_tracker.get_attachedtors(self.guid)
         
+        # remove any extra torrents we have stored locally
+        meta_dir = settings["cloud_meta"]
+        my_torrents_prefix = [ i.split(".")[0] for i in my_torrents ]
+        for f in os.listdir(meta_dir):
+            if f.endswith(self.ext):
+                f = f.split(".")[0]
+                if f not in my_torrents_prefix:
+                    # remove all files with the matching prefix
+                    for fn in glob.glob(os.path.join(meta_dir + '/' + f + '.*')):
+                        log.debug("Unlinking %s" % f)
+                        os.remove(fn)
+                    
         # serve those torrents!
         flag = 0
         bad_torrents = []
@@ -347,8 +362,7 @@ class Cloud(object):
         if bad_torrents:
             log.debug("bad torrents found, removing")
             print "here are my removed torrents"
-            print self.my_tracker.detachtors(self.guid, bad_torrents)
-            
+            print self.my_tracker.detachtors(self.guid, bad_torrents)           
             
             
     
