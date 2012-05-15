@@ -70,16 +70,20 @@ class URLDict(object):
 #        self.conn = httplib.HTTPConnection(self.host)
            
     def __getitem__(self, key):
-        conn = httplib.HTTPConnection(self.host)
+        try:
+            conn = httplib.HTTPConnection(self.host)
         
-        ## call the URL to get the value
-        conn.request("GET", self.url + self.guid + "/" + key + "/")
-        response = conn.getresponse()
+            ## call the URL to get the value
+            conn.request("GET", self.url + self.guid + "/" + key + "/")
+            response = conn.getresponse()
+    
+            if response.status != 200:
+                return None
+            
+            return response.read()
+        except:
+            raise Exception("Error on settings URL getitem")
 
-        if response.status != 200:
-            return None
-        
-        return response.read()
 
     def __setitem__(self, key, value):
         conn = httplib.HTTPConnection(self.host)

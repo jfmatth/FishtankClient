@@ -324,6 +324,7 @@ class Cloud(object):
         my_torrents = self.my_tracker.get_attachedtors(self.guid)
         
         # serve those torrents!
+        log.debug("checking cloud DB")
         flag = 0
         bad_torrents = []
         for filename in my_torrents:

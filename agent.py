@@ -49,20 +49,20 @@ if __name__== "__main__":
 
     # main schedule queue.
     s = Tasker(sigStop, int(settings["sigstop"] or 5) )
-    
+
     log.debug("adding BTC")
     s.addtask(BTC,int(settings["btctime"] or 0) ) 
-    
+
     log.debug("adding BFC")
     s.addtask(BFC, int(settings["bfctime"] or 0) )
-    
+
     # start our cloud()
     log.debug("Starting the cloud")
     c.start()
-    
+
     log.debug("Starting the Tasks")
     log.debug("queue list : %s" % (s.runtasks.queue) )
-    
+
     try:
         s.run()
     except:
