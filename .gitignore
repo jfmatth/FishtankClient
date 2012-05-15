@@ -21,3 +21,4 @@ warnbuild.txt
 build/*
 dist/*
 stop.cmd
+buildenv.cmd
