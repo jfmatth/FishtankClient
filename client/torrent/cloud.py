@@ -65,14 +65,17 @@ data
 """
 
 import os
-import glob
+#import glob
 #import logging # replaced with logger import below
 from client.logger import log
+from client import utility
+
 from tracker import Tracker
 from torrentmetainfo import TorrentMetaInfo
 from session import Session
 from createtorrent import CreateTorrent
 from client.settingsmanager import settings
+
 import anydbm
 import gc
 
@@ -327,16 +330,25 @@ class Cloud(object):
         my_torrents = self.my_tracker.get_attachedtors(self.guid)
         
         # remove any extra torrents we have stored locally
-        meta_dir = settings["cloud_meta"]
+        meta_dir = os.path.normpath(settings['.installdir'] + settings["cloud_meta"] )
+        cloud_dir = os.path.normpath(settings['.installdir'] + settings["cloud_files"] )
+        
         my_torrents_prefix = [ i.split(".")[0] for i in my_torrents ]
+        
         for f in os.listdir(meta_dir):
             if f.endswith(self.ext):
                 f = f.split(".")[0]
                 if f not in my_torrents_prefix:
                     # remove all files with the matching prefix
-                    for fn in glob.glob(os.path.join(meta_dir + '/' + f + '.*')):
-                        log.debug("Unlinking %s" % f)
-                        os.remove(fn)
+#                    for fn in glob.glob(os.path.join(meta_dir + '/' + f + '.*')):
+#                        log.debug("Unlinking %s" % f)
+#                        os.remove(fn)
+
+                    # remove the three types of files, hardcoded for now.
+                    log.debug("Unlinking %s from tracker." % f)
+                    utility.remove_file(cloud_dir + "/" + f + ".backup-e")
+                    utility.remove_file(meta_dir + "/" + f + ".backup-e.torrent")
+                    utility.remove_file(meta_dir + "/" + f + ".backup-e.fastresume")
                     
         # serve those torrents!
         log.debug("checking cloud DB")

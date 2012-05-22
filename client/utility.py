@@ -1,8 +1,44 @@
 import os
-import platform
-import ctypes
+#import platform
+#import ctypes
+import httplib
+import urllib
 
 import win32file
+
+def server_ping(host=None, guid=None):
+    urlping = "/manager/ping/"
+
+    if host==None or guid==None:
+        raise Exception("Invalid host or guid passed into server_ping")
+    
+    try:
+        conn = httplib.HTTPConnection(host)
+        params = urllib.urlencode(
+                                  {"guid": guid}
+                                  )
+    
+        ## call the URL to get the value
+        getstring = urlping + "?" + params
+        conn.request("GET", getstring)
+        
+        response = conn.getresponse()
+
+        if response.status != 200:
+            return False
+        
+        return True
+    except:
+        return False
+
+def remove_file(fullpath):
+    # removes a file and blocks and exceptions
+    try:
+        os.remove(fullpath)
+        return True
+    except:
+        return False
+        pass
 
 def get_free_space(drive):
     """ Return folder/drive free space (in bytes)
