@@ -25,6 +25,9 @@ def register(key=None):
     if key == None:
         raise RegistrationError("missing registration key")
 
+    # reset the settings environment before we register
+    settings.reset()
+
     try:      
         HTTPConnection = httplib.HTTPConnection(settings[".managerhost"])
         URL = settings[".registerurl"]

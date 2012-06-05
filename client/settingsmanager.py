@@ -16,7 +16,6 @@ if <key> starts with #, thats special on the server.
 f.
 """
 
-import anydbm
 import urllib
 import httplib
 import ConfigParser
@@ -33,13 +32,13 @@ class LocalDict(object):
     def __init__(self, thefile=None):
         # we only have one section name for the config
         self.section = "settings"
+        
         self.configfile = thefile
         
         # read from our config file, this will raise an exception if the file does not
         # exist.  Good for now.
         self.cp = ConfigParser.SafeConfigParser()
-        
-            
+                    
         if not os.path.isfile(self.configfile):
             self.cp.add_section(self.section)
         else:
@@ -60,29 +59,31 @@ class LocalDict(object):
 
 
 class URLDict(object):
-    
     def __init__(self, host, url, guid):
         self.host = host
         self.url  = url
         self.guid = guid
-        
-        # define our connection to 
-#        self.conn = httplib.HTTPConnection(self.host)
-           
+
+        # if the tracker is offline, then set this for now, and never check back in.
+        self.offline = False
+                           
     def __getitem__(self, key):
-        try:
-            conn = httplib.HTTPConnection(self.host)
+        if not self.offline:
+            try:
+                conn = httplib.HTTPConnection(self.host)
         
-            ## call the URL to get the value
-            conn.request("GET", self.url + self.guid + "/" + key + "/")
-            response = conn.getresponse()
-    
-            if response.status != 200:
-                return None
-            
-            return response.read()
-        except:
-            raise Exception("Error on settings URL getitem")
+                ## call the URL to get the value
+                conn.request("GET", self.url + self.guid + "/" + key + "/")
+                response = conn.getresponse()
+        
+                if response.status != 200:
+                    return None
+                
+                return response.read()
+            except:
+                self.offline = True
+                
+                return False
 
 
     def __setitem__(self, key, value):
@@ -103,27 +104,67 @@ class Manager(object):
     """
     LOCALCHAR = "."
 
+    # these are the minimum values we need in our settings file.
+    RequiredSettings = ['.managerhost',
+                        '.settingurl',
+                        '.registerurl'
+                        ]
+
+    settings_filename = None    # holder for the filename of the settings.txt file
+
     def __init__(self,thefile="settings.txt"):
         # a link to our local settings file, bootstrap.
 
-        if not os.path.exists(thefile):
-            raise Exception("%s does not exist in %s" % (thefile, os.path.dirname(thefile) ) )
-
-        self.LocalSettings = LocalDict(thefile)
+        self.settings_filename = thefile
         
-        # our DB cache for all our settings from the URL /manager/settings
-#        self.DBMSettings = anydbm.open("settings.db", "c")
+        if not os.path.exists(self.settings_filename):
+            raise Exception("%s does not exist in %s" % (self.settings_filename, os.path.dirname(self.settings_filename) ) )
+
+        self.LocalSettings = LocalDict(self.settings_filename)
+        self.LocalCache = LocalDict(self.settings_filename + ".cache")
         
         # URLSettings is none to start in case we don't have enough to bootstrap.
         self.URLSettings = None
-#        if self._urlcheck():
-#            self._urldict()
-#            self._refresh()
 
     def __del__(self):
         # before we die, save our settings file
         if not self.LocalSettings == None:
             self.LocalSettings.save()
+            self.LocalCache.save()
+
+    def reset(self):
+        """
+        Reset the settings environment
+        
+        Removes all but the RequiredSettings values
+        
+        typically only called from the register.py module.
+        """
+        
+        hold = {}
+        
+        # Save our current settings.
+        for x in self.RequiredSettings:
+            hold[x] = self.LocalSettings[x]
+            
+        # reset everything.
+        self.LocalSettings = None
+        self.LocalCache = None
+        os.remove(self.settings_filename)
+        os.remove(self.settings_filename + '.cache')
+        self.LocalSettings = LocalDict(self.settings_filename)
+        self.LocalCache = LocalDict(self.settings_filename + ".cache")
+
+        # re-populate.
+        for x in hold:
+            self.LocalSettings[x] = hold[x]
+
+
+    def validate(self):
+        """
+        validates that we have all the necessary values
+        """
+        utility.validate_settings(self)
 
     def _urlcheck(self):
         """
@@ -133,16 +174,6 @@ class Manager(object):
             return True
         else:
             return False
-
-    def _refresh(self):
-        """
-        refreshs all keys in the local DBM from the URL manager
-        """
-        # if we have all the values we need to hookup to the URL
-#        for key in self.DBMSettings.keys():
-#            if not key.startswith(LOCALCHAR):
-#                self.DBMSettings[key] = self._urldict()[key]
-        pass
 
     def _urldict(self):
         """ a semi-factory type method, return the URLSettings pointer if we have one
@@ -186,10 +217,11 @@ class Manager(object):
 #            else:
             # need to check the manager via our url    
             value = self._urldict()[key]
-#            if value:
-#                self.DBMSettings[key] = value
-                
-            return value
+            if value:
+                self.LocalCache[key] = value
+                return value
+            else:
+                return self.LocalCache[key]
 
     def __setitem__(self,key, value):
         """ set the value in the DB or URL or settings file.  if key starts with "setting." then it is
@@ -210,10 +242,9 @@ if servicemanager.RunningAsService():
         sfile = os.path.join( os.path.dirname(sys.argv[0]),"settings.txt" )
     else:
         sfile = os.path.join( os.path.dirname(sys.executable), "settings.txt" )
-else:
-    sfile = os.path.join(os.path.curdir, "settings.txt")
+else:    sfile = os.path.join(os.path.curdir, "settings.txt")
 
 # define settings here
 settings = Manager(thefile=sfile)
 
-utility.validate_settings(settings)
+#utility.validate_settings(settings)

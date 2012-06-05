@@ -9,7 +9,6 @@ At the end of the backup.execute(), two files should be retrieved:
 
 import zlib
 import os
-import tempfile
 import stat
 import time
 import json
@@ -49,7 +48,7 @@ def ZipDBFile(path):
 
     return zipfilename, dbfilename
 
-def BackupGenerator(filespec = None,
+def BackupGenerator(spec = None,
                     temppath = None,
                     datapath = None,
                     drives   = None,
@@ -67,20 +66,18 @@ def BackupGenerator(filespec = None,
         limit    - how big in MB should each (pre compressed) backup set be before yielding. backed up
     """
     
-    if (filespec == None or temppath == None or datapath == None or drives == None):
+    if (spec == None or temppath == None or datapath == None or drives == None):
         raise Exception("invalid values for Backup")
 
     if not type(drives)==list:
         raise Exception("drives must be of type list") 
 
-    log.debug("filespec = %s" % filespec)
     log.debug("temppath = %s" % temppath)
     log.debug("datapath = %s" % datapath)
     log.debug("drives = %s" % drives)
 
     try:
         fulldbname = os.path.join(datapath, "dbfull.db")
-        fileregex = re.compile(filespec)
         
         _limit = limit * 1024 * 1024
         log.debug("filesize = %s" % _limit)
@@ -96,10 +93,12 @@ def BackupGenerator(filespec = None,
     
         log.debug("Starting loop over drives")
         
-        for currdir in drives:
+        for drive in drives:
             if stoprunning:
                 break
         
+            currdir = os.path.normpath(drive)
+                
             log.debug("currdir %s in drives" % currdir)
                 
             if len(currdir) != 0:
@@ -110,10 +109,14 @@ def BackupGenerator(filespec = None,
                         stoprunning = True
                         break
 
+                    # if this directory shouldn't be 'walked' then move on
+                    if not spec.dirok(root):
+                        continue
+
                     for f in files:
                         fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) 
     
-                        if os.path.isfile(fullpath) and fileregex.match(fullpath):
+                        if os.path.isfile(fullpath) and spec.fileok(fullpath):
                             try:
                                 finfo = fileinfo(fullpath)
                                 
@@ -150,7 +153,7 @@ def BackupGenerator(filespec = None,
 
     
         if stoprunning:
-            log.debug("Backup stopped by stoprunning")
+            log.debug("Stop backup signal received")
             
         # once we have traversed everything, clean up the last of it all.                                
         if not _zip == None:

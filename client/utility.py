@@ -1,6 +1,5 @@
 import os
-#import platform
-#import ctypes
+
 import httplib
 import urllib
 
@@ -10,7 +9,7 @@ def server_ping(host=None, guid=None):
     urlping = "/manager/ping/"
 
     if host==None or guid==None:
-        raise Exception("Invalid host or guid passed into server_ping")
+        return False
     
     try:
         conn = httplib.HTTPConnection(host)
@@ -49,11 +48,13 @@ def get_free_space(drive):
 #        return free_bytes.value
 #    else:
 #        return os.statvfs(folder).f_bfree    
+
+    # fb=freebyes, tb=totalbytes, tfb=TotalFreeBytes (to this user).    
     fb, tb, tfb = win32file.GetDiskFreeSpaceEx(drive)
 
     return tfb
         
-        
+
 def validate_settings(settings = None):
     # validate all settings in a settings session
 
