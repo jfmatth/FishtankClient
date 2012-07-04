@@ -58,6 +58,7 @@ class BackupService(win32serviceutil.ServiceFramework):
         from client.torrent import cloud
         from client.tasker import Tasker
         from client.backupcloud import BackupFromCloud, BackupToCloud
+        from client import utility 
 
         # try to put our logger on the class log variable
         self.pythonlog = log
@@ -76,7 +77,9 @@ class BackupService(win32serviceutil.ServiceFramework):
 
         insdir = settings['.installdir']
         td = os.path.normpath(insdir + settings['cloud_meta'] )
-        dd = os.path.normpath(insdir + settings['cloud_files'] ) 
+        utility.check_dir(td)
+        dd = os.path.normpath(insdir + settings['cloud_files'] )
+        utility.check_dir(dd) 
         sd = os.path.normpath(insdir + settings['cloud_meta'] )
         c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
                         torr_dir = td,

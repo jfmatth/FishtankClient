@@ -52,6 +52,9 @@ class LocalDict(object):
 
     def __setitem__(self, key, value):
         self.cp.set(self.section, key, value)
+        
+    def __delitem__(self,key):
+        self.cp.remove_option(self.section, key)
 
     def save(self):
         self.cp.write(open(self.configfile,"w"))
@@ -68,22 +71,24 @@ class URLDict(object):
         self.offline = False
                            
     def __getitem__(self, key):
-        if not self.offline:
+        if self.offline:
+            raise
+        else:
             try:
                 conn = httplib.HTTPConnection(self.host)
         
                 ## call the URL to get the value
                 conn.request("GET", self.url + self.guid + "/" + key + "/")
                 response = conn.getresponse()
-        
+
                 if response.status != 200:
                     return None
                 
                 return response.read()
             except:
                 self.offline = True
-                
-                return False
+# raise an exception, so that the calling manager knows that it should pull from cache.                
+                raise
 
 
     def __setitem__(self, key, value):
@@ -148,8 +153,12 @@ class Manager(object):
             hold[x] = self.LocalSettings[x]
             
         # reset everything.
+        self.LocalSettings.save()
         self.LocalSettings = None
+        
+        self.LocalCache.save()
         self.LocalCache = None
+        
         os.remove(self.settings_filename)
         os.remove(self.settings_filename + '.cache')
         self.LocalSettings = LocalDict(self.settings_filename)
@@ -215,12 +224,17 @@ class Manager(object):
 #            if self.DBMSettings.has_key(key):
 #                return self.DBMSettings[key]
 #            else:
-            # need to check the manager via our url    
-            value = self._urldict()[key]
-            if value:
-                self.LocalCache[key] = value
-                return value
-            else:
+            # need to check the manager via our url
+            try:    
+                value = self._urldict()[key]
+                if value:
+                    self.LocalCache[key] = value
+                    return value
+                else:
+                    if self.LocalCache[key]:
+                        del self.LocalCache[key]
+            except:
+                # if an exception is raised, then we are offline.
                 return self.LocalCache[key]
 
     def __setitem__(self,key, value):

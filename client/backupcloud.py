@@ -17,6 +17,7 @@ import json
 import re
 
 
+
 def BackupFromCloud( cloud = None, 
 					 settings = None 
 					):
@@ -37,28 +38,33 @@ def BackupFromCloud( cloud = None,
 		log.debug("Tracker Offline, returning ")
 		return
 
-	percFree = int(settings["max_free_perc"]) / 100.00
-	maxGB = int(settings["min_free_gb"]) * 1024 * 1024 * 1024
+	# get the size and free space on this drive. 
+	size, free = utility.diskspaceinfo(os.path.splitdrive(settings[".installdir"])[0] )
 
-	#calculate free space
-	fs = utility.get_free_space("\\")
-	
-	amount = min(int(fs*percFree), int(maxGB))
+	# how much space are we taking up?
+	clouddir = os.path.normpath(os.path.join(settings['.installdir'], settings['cloud_files']) )
+	cloudspace = utility.pathspaceinfo(clouddir)
+
+#	percFree = int(settings["max_free_perc"]) / 100.00
+#	maxGB = int(settings["min_free_gb"]) * 1024 * 1024 * 1024
+
+#	#calculate free space
+#	fs = utility.get_free_space("\\")
+#	
+#	amount = min(int(fs*percFree), int(maxGB))
 
 	# we will ask for a torrent of size < = amount then.
 	managerhost = settings[".managerhost"]
 	guid = settings[".guid"]
 	HTTPConnection = httplib.HTTPConnection(managerhost)
-	URL = "/manager/getcloud/?%s" % urllib.urlencode( {'size':amount,
-							  'guid': guid 
-							  }
-							)
+	parms = urllib.urlencode( {'guid': guid, 'size': size, 'cloud': cloudspace, 'free':free} )
+	URL = "/manager/diskspace/"
 
-	HTTPConnection.request("GET", URL)
+	HTTPConnection.request("POST", URL, parms)
 	response = HTTPConnection.getresponse()
 	
 	if response.status != 200:
-		log.debug("error : URL: %s" % URL)
+		log.debug("error : URL: %s msg:%s txt:%s" % (URL, response.reason, response.read() ) )
 	else:
 		infohash = response.read()
 		if len(infohash) > 0:
@@ -69,45 +75,56 @@ def BackupFromCloud( cloud = None,
 	log.debug("BackupFromCloud() finished")
 
 
-
 class BackupSpec():
 	def __init__(self, fs=None, ds=None):
 		self.filespec = fs
 		self.dirspec = ds
 		
-		self.fileregex = re.compile(self.filespec or "")
-		self.dirlist = self.dirspec.split("|")
+		self.fileregex = re.compile(self.filespec or "", re.IGNORECASE)
+#		self.dirlist = self.dirspec.split("|")
+		self.dirregex = re.compile(self.dirspec or "", re.IGNORECASE)
 				
 	def dirok(self, dirname=None):
 		"""
 		if dirname is a match to our regex, the return FALSE, otherwise return TRUE.  Sort of 
 		unintuitive, but directories that match won't be backed up.
 		"""
-		try:
-			if not dirname==None:
-				# loop over all of self.dirlist to see this directory starts with any of them
-				for xdir in self.dirlist:
-					if dirname.startswith(os.path.normpath(xdir) ):
-						log.debug("Skipping directory %s" % dirname)
-						return False
-				
-				# if we get this far, then there was no match.
-				log.debug("checking %s" % dirname)
-				return True
+#		try:
+#			if not dirname==None:
+#				# loop over all of self.dirlist to see this directory starts with any of them
+#				for xdir in self.dirlist:
+#					if os.path.normpath(dirname).lower().startswith(os.path.normpath(xdir).lower()):
+#						log.debug("Skipping directory %s" % dirname)
+#						return False
+#				
+#				# if we get this far, then there was no match.
+#				log.debug("checking %s" % dirname)
+#				return True
+#			else:
+#				log.debug("checking %s" % dirname)
+#
+#				return True							# nothing specified, so backup/
+#		except:
+#			log.exception("Error in dirok function checking")
+#			return False
+
+		# change to using a regex for each directory.
+		if not dirname==None:
+			if self.dirregex.match(dirname):
+				return False
 			else:
 				log.debug("checking %s" % dirname)
-
-				return True							# nothing specified, so backup/
-		except:
-			log.exception("Error in dirok function checking")
-			return False 		
+				return True
+		else:
+			return False
 		
 	def fileok(self, filename=None):
 		"""
-		if the filename passed in matches the regex, then return True (i.e. backup), otherwise return False (don't backup) 
+		Same as directories, don't backup matching patterns 
 		"""
 		if not filename==None:
-			if self.fileregex.match(filename):
+			# split out the filename
+			if self.fileregex.match( os.path.split(filename)[1] ):
 				return False
 			else:
 				return True
@@ -115,7 +132,7 @@ class BackupSpec():
 			return False
 		
 	def __repr__(self):
-		return "filespec=%s, dirspec=%s, dirlist=%s" % (self.filespec, self.dirspec, self.dirlist)
+		return "filespec=%s, dirspec=%s, dirspec=%s" % (self.filespec, self.dirspec, self.dirspec)
 
 
 def BackupToCloud(	cloud = None, 
@@ -154,13 +171,15 @@ def BackupToCloud(	cloud = None,
 	
 	if settings["temppath"] == None:
 		raise("No temppath specified")
-	temppath = settings['temppath']
-	
+	#temppath = settings['temppath']
+	temppath = os.path.normpath(insdir + settings['temppath'])
+	utility.check_dir(temppath)
 	log.info("temppath = %s" % temppath)
 	
 	if settings["dbpath"] == None:
 		raise("no DB path specified")
 	dbpath = os.path.normpath(insdir + settings['dbpath'])
+	utility.check_dir(dbpath)
 	log.info("dbpath = %s" % dbpath)
 	
 	if not settings["backupdrives"]==None:
@@ -169,7 +188,7 @@ def BackupToCloud(	cloud = None,
 		raise Exception("No backupdrives specified")
 	log.info("drives = %s" % drives)
 	
-	backupsize = settings["backupsize"] or 1000
+	backupsize = settings["backupsize"] or 100
 	backupsize = int(backupsize)
 	
 	# define new BackupSpec varaiable that we can pass in to check for dirs and files to backup.
@@ -181,7 +200,7 @@ def BackupToCloud(	cloud = None,
 	if settings["cloud_files"] == None:
 		raise("no cloud_files specified")
 	cloudpath = os.path.normpath(insdir + settings['cloud_files'])
-	
+	utility.check_dir(cloudpath)
 	log.info("Starting backup loop")
 
 	# define them here, since we need to check them at close
@@ -221,10 +240,14 @@ def BackupToCloud(	cloud = None,
 			filein  = zf
 			fileout = os.path.join(cloudpath,os.path.basename(zf) + "-e") 
 		
-			key = str(uuid.uuid4() )
+			key = str(uuid.uuid4() )[:32]
 	
 			log.info("Encrypting %s"  % filein)
-			encrypt.EncryptAFile(filein=filein, fileout=fileout, key=key)
+#			encrypt.EncryptAFile(filein=filein, fileout=fileout, key=key)
+			# replace with new PyCrypto version.
+			encrypt.encrypt_file(key=key,
+								 in_filename=filein,
+								 out_filename=fileout)
 	
 			# file is encrypted, sitting at fileout.
 			# encrypt the key and push to server?

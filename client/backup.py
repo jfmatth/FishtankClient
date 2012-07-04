@@ -76,6 +76,8 @@ def BackupGenerator(spec = None,
     log.debug("datapath = %s" % datapath)
     log.debug("drives = %s" % drives)
 
+    maxfilecount = 2000
+
     try:
         fulldbname = os.path.join(datapath, "dbfull.db")
         
@@ -87,7 +89,7 @@ def BackupGenerator(spec = None,
         _dbfull = anydbm.open(fulldbname, "c")
     
         _count = 0
-    
+        
         # define a variable to stop us backing up, cause the runbackup() could be "expensive"
         stoprunning = False
     
@@ -113,6 +115,8 @@ def BackupGenerator(spec = None,
                     if not spec.dirok(root):
                         continue
 
+                    log.debug("_size = %s" % _size)
+                    
                     for f in files:
                         fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) 
     
@@ -131,19 +135,21 @@ def BackupGenerator(spec = None,
                                         _dbdiff = anydbm.open(dbf, "n")
         
                                     sfinfo = json.dumps(finfo)                            
-                                    _dbdiff[fullpath] = sfinfo
                                     _zip.write(fullpath)
+                                    _dbdiff[fullpath] = sfinfo
+                                    _count += 1
         
                                     _size  += finfo['size']
         
-                                    if _size >= _limit:
+                                    if (_size >= _limit or _count >= maxfilecount):
                                         # we have "filled" our zip /db combo, yield.
-                                        log.info("len(_dbdiff) = %s " % len(_dbdiff) )
+                                        log.info("Size: %s, len(_dbdiff) = %s " % (_size, len(_dbdiff) ) )
                                         _zip.close()
                                         _dbdiff.close()
                                         _zip = None
                                         _dbdiff = None
                                         _size = 0
+                                        _count = 0
                                         yield zf, dbf
     
                             except Exception as e:

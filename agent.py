@@ -5,6 +5,7 @@ from client.settingsmanager import settings
 from client.logger import log
 from client.torrent import cloud
 from client.tasker import Tasker
+from client import utility
 from client.backupcloud import BackupFromCloud, BackupToCloud
 
 import os
@@ -31,10 +32,11 @@ if __name__== "__main__":
     if os.path.exists("C:/temp/stop.txt"):
         os.remove("C:/temp/stop.txt")
 
-
     insdir = settings['.installdir']
     td = os.path.normpath(insdir + settings['cloud_meta'] )
-    dd = os.path.normpath(insdir + settings['cloud_files'] ) 
+    utility.check_dir(td)
+    dd = os.path.normpath(insdir + settings['cloud_files'] )
+    utility.check_dir(dd) 
     sd = os.path.normpath(insdir + settings['cloud_meta'] )
     
     log.debug('td = %s' % td)

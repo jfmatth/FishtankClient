@@ -1,9 +1,40 @@
 import os
-
+import stat
 import httplib
 import urllib
 
 import win32file
+
+
+def pathspaceinfo(path=None):
+    """
+    returns the amount of disk space used by files in <path>
+    """
+    if path==None:
+        return 0
+    
+    spaceused = 0
+    for root, dirs, files in os.walk(path):
+        spaceused = sum([os.path.getsize(os.path.join(root, name)) for name in files]) 
+        break
+    
+    return spaceused   
+
+
+
+def diskspaceinfo(drive):
+    """
+    returns the amount of disk space free and total diskspace on <drive> (i.e. c:)
+    """
+    
+    try:
+        fb, tb, tfb = win32file.GetDiskFreeSpaceEx(drive)
+
+        return tb, tfb
+    except:
+        return 0, 0
+
+
 
 def server_ping(host=None, guid=None):
     urlping = "/manager/ping/"
@@ -54,17 +85,18 @@ def get_free_space(drive):
 
     return tfb
         
+def check_dir(path=None):
+    
+    if path == None:
+        raise Exception("Can't check a blank path")
+        
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 
 def validate_settings(settings = None):
     # validate all settings in a settings session
 
-    def check_dir(path=None):
-        
-        if path == None:
-            raise Exception("Can't check a blank path")
-            
-        if not os.path.exists(path):
-            os.mkdir(path)
     
     if settings == None:
         raise Exception("No settings variable specified")
