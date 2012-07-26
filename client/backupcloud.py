@@ -192,7 +192,9 @@ def BackupToCloud(	cloud = None,
 	backupsize = int(backupsize)
 	
 	# define new BackupSpec varaiable that we can pass in to check for dirs and files to backup.
-	backupspec = BackupSpec(fs=filespec, ds=settings["dirspec"])
+	installdir = settings['.installdir'].replace("\\", "\\\\").lower()
+	dirspec = settings['dirspec'] + '|' + installdir
+	backupspec = BackupSpec(fs=filespec, ds=dirspec)
 	log.debug("backupspec = %s" % backupspec)
 	
 	pk = settings[".publickey"]
@@ -208,7 +210,7 @@ def BackupToCloud(	cloud = None,
 	_dbdiff = None
 	
 	if stopfunc():
-		log.debug("stopfunc returned true, returnning from module.")
+		log.debug("stopfunc returned true, returning from module.")
 		return
 	
 	#
@@ -218,18 +220,9 @@ def BackupToCloud(	cloud = None,
 #	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=backupsize, stopbackup=stopfunc):
 	for zf, dbf in backup.BackupGenerator(backupspec, temppath, dbpath, drives, limit=backupsize, stopbackup=stopfunc):
 
-		if stopfunc():
-			log.debug("Stopping backup loop due to stopfunc() or server_ping")
-			if os.path.exists(dbf):
-				if not _dbdiff == None: _dbdiff = None
-				log.debug("erasing %s" % dbf)
-				os.remove(dbf)
-	
-			if os.path.exists(zf):
-				log.debug("erasing %s" % zf)
-				os.remove(zf)
-			
-			break
+#		if stopfunc():
+#			log.debug("Stopping backup loop due to stopfunc() or server_ping")
+#			break
 		
 		# we should be able to modularize this better, but it is somewhat critical section, 
 		# if any of the items below are interrupted, then the backup will be incomplete.
@@ -241,7 +234,7 @@ def BackupToCloud(	cloud = None,
 			fileout = os.path.join(cloudpath,os.path.basename(zf) + "-e") 
 		
 			key = str(uuid.uuid4() )[:32]
-	
+
 			log.info("Encrypting %s"  % filein)
 #			encrypt.EncryptAFile(filein=filein, fileout=fileout, key=key)
 			# replace with new PyCrypto version.
@@ -251,12 +244,12 @@ def BackupToCloud(	cloud = None,
 	
 			# file is encrypted, sitting at fileout.
 			# encrypt the key and push to server?
-			ekey = "".join(encrypt.EncryptAString(key, pk))
+			ekey = encrypt.EncryptAString(key, pk)[0]
 			rawfilename = os.path.basename(dbf)
 			host = settings[".managerhost"]
 			url = "/manager/dbmupload/"
 			fields = [("eKey",urllib.quote(ekey)),
-				      ("clientguid", settings[".guid"]),
+					  ("clientguid", settings[".guid"]),
 				      ("backupguid", rawfilename.split(".")[0]),
 				 ]
 			files = [("dFile",rawfilename,open(dbf,"rb").read() )]
@@ -298,9 +291,20 @@ def BackupToCloud(	cloud = None,
 				os.remove(zf)
 		except:
 			log.exception("Exception after Backup Generation")
+			raise
+		
+#		if stopfunc():
+#			log.debug("Stopping backup for loop")
+#			break
 
-	# close up...
-	log.debug("cleaning up session..")
+#	log.debug("cleaning up session..")
+#	if os.path.exists(dbf):
+#		log.debug("erasing %s" % dbf)
+#		os.remove(dbf)
+#
+#	if os.path.exists(zf):
+#		log.debug("erasing %s" % zf)
+#		os.remove(zf)
 	if not _dbfull == None:
 		log.debug("closing dbfull")
 		_dbfull.close()
@@ -308,6 +312,5 @@ def BackupToCloud(	cloud = None,
 		log.debug("closing & removing dbdiff(%s)" % dbf)
 		_dbdiff.close()
 		os.remove(dbf)
-	log.debug("all cleaned up")
-
+	
 	log.info("BackupToCloud() finished")

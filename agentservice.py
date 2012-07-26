@@ -81,6 +81,12 @@ class BackupService(win32serviceutil.ServiceFramework):
         dd = os.path.normpath(insdir + settings['cloud_files'] )
         utility.check_dir(dd) 
         sd = os.path.normpath(insdir + settings['cloud_meta'] )
+        
+        # erase all files in our temp directory on startup.
+        log.debug("Emptying the temp directory")
+        tempdir = os.path.normpath(insdir + settings['temppath'] )
+        utility.EmptyADir(tempdir)        
+        
         c = cloud.Cloud(tracker_ip=settings["tracker_ip"],
                         torr_dir = td,
                         data_dir = dd,

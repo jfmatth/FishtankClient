@@ -106,7 +106,7 @@ class Cloud(object):
                  tracker_ip="10.0.0.1:8000", 
                  callback=lambda: ".", 
                  session_dir="c:/torrent", 
-                 db_name="torrent.db", 
+#                 db_name="torrent.db", 
                  ext=".torrent",
                  rate=None):
         """
@@ -127,8 +127,8 @@ class Cloud(object):
         self.ext = ext
         
         #self.torr_db = os.path.join(session_dir, db_name)
-        self.torr_db = os.path.join(session_dir)
-        self.db = None                 # pointer to our torrent DB
+#        self.torr_db = os.path.join(session_dir)
+#        self.db = None                 # pointer to our torrent DB
         
         # setup our tracker
         self.my_tracker = Tracker(tracker_ip)
@@ -262,27 +262,27 @@ class Cloud(object):
             ti = TorrentMetaInfo(self.torr_dir, self.data_dir, self.my_tracker.tracker_ip, torr_file=torr_name_l)
             self.session.serve(ti)
     
-    def del_torrent(self, ih):
-        """
-        Given an info hash, delete a torrent locally
-        """
-        
-        try:
-            self.db = anydbm.open(self.torr_db, 'c')
-        except:
-            return False
-        
-        for info_hash, filename in self.db.iteritems():
-            if info_hash == ih:
-                self.unstor_torr(ih)
-                if self.session.unserve(info_hash=ih):
-                    log.debug("Torrent unserved.")
-                else:
-                    log.debug("Failed to unserve torrent.")
-                return True    
-                
-        self.db.close()
-        return False
+#    def del_torrent(self, ih):
+#        """
+#        Given an info hash, delete a torrent locally
+#        """
+#        
+#        try:
+#            self.db = anydbm.open(self.torr_db, 'c')
+#        except:
+#            return False
+#        
+#        for info_hash, filename in self.db.iteritems():
+#            if info_hash == ih:
+#                self.unstor_torr(ih)
+#                if self.session.unserve(info_hash=ih):
+#                    log.debug("Torrent unserved.")
+#                else:
+#                    log.debug("Failed to unserve torrent.")
+#                return True    
+#                
+#        self.db.close()
+#        return False
     
     ###########################################
     # Start/Stop Cloud
@@ -351,11 +351,11 @@ class Cloud(object):
                     utility.remove_file(meta_dir + "/" + f + ".backup-e.fastresume")
                     
         # serve those torrents!
-        log.debug("checking cloud DB")
+#        log.debug("checking cloud DB")
         flag = 0
         bad_torrents = []
         for filename in my_torrents:
-            log.debug("Loading... %s" % (filename,))
+            log.debug("Loading Torrent %s" % (filename,))
             ti = TorrentMetaInfo(self.torr_dir, self.data_dir, self.my_tracker.tracker_ip, filename, str(filename+self.ext))
             
             # if we have it, and the tracker has it, serve it
@@ -368,15 +368,13 @@ class Cloud(object):
         
         # if there were no torrents returned, then just start the cloud with nothing.
         if not flag:
-            log.debug("Empty database, starting cloud serving no torrents.")
+            log.debug("Starting cloud serving no torrents.")
             self.session.serve()
         
         # update the tracker with torrents not on local disk
         if bad_torrents:
             log.debug("bad torrents found, removing")
-            print "here are my removed torrents"
-            print self.my_tracker.detachtors(self.guid, bad_torrents)           
-            
+            log.debug(self.my_tracker.detachtors(self.guid, bad_torrents))           
             
     
     def is_serving(self):
@@ -402,44 +400,44 @@ class Cloud(object):
     # Database functions
     ###########################################        
     
-    def stor_torr(self, info_hash, torr_name):
-        """
-        Store torrents we're serving in the database.  If it's already in our database, just
-        ignore it.  Pairs are stored as key => infohash, value=>torr_name
-        
-        Parameters
-        torr_name: file name of torrent (string)
-        info_hash: info hash of torrent (string)
-        """
-        self.db = anydbm.open(self.torr_db, 'c')
-        if not self.db.has_key(info_hash):
-            self.db[info_hash] = torr_name
-            log.debug("info_hash %s, torr_name: %s" % (info_hash, torr_name,))
-        self.db.close()
-        
-    def unstor_torr(self, info_hash):
-        """
-        Delete a torrent from our database.
-        
-        Parameters
-        info_hash: info hash of torrent to delete
-        
-        Returns
-        True if deleted.
-        False if not deleted, or failure.
-        """
-        try:
-            self.db = anydbm.open(self.torr_db, 'w')
-        except:
-            log.debug("Failed opening database for key removal.")
-            return False
-        else:
-            try:
-                del self.db[info_hash]
-            except:
-                log.debug("Failed removing key.")
-                return False
-            else:
-                return True
-
-        
+#    def stor_torr(self, info_hash, torr_name):
+#        """
+#        Store torrents we're serving in the database.  If it's already in our database, just
+#        ignore it.  Pairs are stored as key => infohash, value=>torr_name
+#        
+#        Parameters
+#        torr_name: file name of torrent (string)
+#        info_hash: info hash of torrent (string)
+#        """
+#        self.db = anydbm.open(self.torr_db, 'c')
+#        if not self.db.has_key(info_hash):
+#            self.db[info_hash] = torr_name
+#            log.debug("info_hash %s, torr_name: %s" % (info_hash, torr_name,))
+#        self.db.close()
+#        
+#    def unstor_torr(self, info_hash):
+#        """
+#        Delete a torrent from our database.
+#        
+#        Parameters
+#        info_hash: info hash of torrent to delete
+#        
+#        Returns
+#        True if deleted.
+#        False if not deleted, or failure.
+#        """
+#        try:
+#            self.db = anydbm.open(self.torr_db, 'w')
+#        except:
+#            log.debug("Failed opening database for key removal.")
+#            return False
+#        else:
+#            try:
+#                del self.db[info_hash]
+#            except:
+#                log.debug("Failed removing key.")
+#                return False
+#            else:
+#                return True
+#
+#        

@@ -39,6 +39,11 @@ if __name__== "__main__":
     utility.check_dir(dd) 
     sd = os.path.normpath(insdir + settings['cloud_meta'] )
     
+    # erase all files in our temp directory on startup.
+    log.debug("Emptying the temp directory")
+    tempdir = os.path.normpath(insdir + settings['temppath'] )
+    utility.EmptyADir(tempdir)
+    
     log.debug('td = %s' % td)
     log.debug('dd = %s' % dd)
     log.debug('sd = %s' % sd)
