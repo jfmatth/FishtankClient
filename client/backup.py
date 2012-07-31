@@ -100,8 +100,6 @@ def BackupGenerator(spec = None,
         log.debug("Starting loop over drives")
         
         for drive in drives:
-#            if stoprunning:
-#                break
         
             currdir = os.path.normpath(drive)
                 
@@ -137,7 +135,7 @@ def BackupGenerator(spec = None,
                                         zf, dbf = ZipDBFile(temppath)
                                         _zip    = zipfile.ZipFile(zf, "w", compression=zipfile.ZIP_DEFLATED)
                                         _dbdiff = anydbm.open(dbf, "n")
-        
+
                                     sfinfo = json.dumps(finfo)                            
                                     _zip.write(fullpath)
                                     _dbdiff[fullpath] = sfinfo

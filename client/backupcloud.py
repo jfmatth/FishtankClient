@@ -182,10 +182,13 @@ def BackupToCloud(	cloud = None,
 	utility.check_dir(dbpath)
 	log.info("dbpath = %s" % dbpath)
 	
-	if not settings["backupdrives"]==None:
-		drives = settings["backupdrives"].split(",")
-	else:
-		raise Exception("No backupdrives specified")
+#	if not settings["backupdrives"]==None:
+#		drives = settings["backupdrives"].split(",")
+#	else:
+#		raise Exception("No backupdrives specified")
+
+	drives = utility.LogicalDrives()
+
 	log.info("drives = %s" % drives)
 	
 	backupsize = settings["backupsize"] or 100

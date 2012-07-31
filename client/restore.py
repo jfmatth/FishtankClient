@@ -1,3 +1,7 @@
+"""
+- Needs more testing.
+"""
+
 import requests
 import urllib
 import os
@@ -10,13 +14,18 @@ from client import encrypt
 
 class Restore:
     
-    cloud = None
-    settings = None
-
-    restoreurl = None 
+    cloud = None        # cloud object
+    settings = None     # settings object
+    restoreurl = None   # retoreURL can't be defined w/o some settings. 
     
-    def __init__(self):
-        pass
+    def __init__(self, 
+                 cloud = None,
+                 settings = None):
+        """
+        cloud and settings - allows user to assign at definition time vs. later as attribute.
+        """
+        self.cloud = cloud
+        self.settings = settings
 
     def _privatekey(self):
         """
@@ -32,10 +41,10 @@ class Restore:
 
 
     def _restorefiles(self, 
-                     hash=None,
+                     infohash=None,
                      files=None, ):
         """
-        Restores a list of files(filelist) from a particular infohash (hash)
+        Restores a list of files(filelist) from a particular infohash (infohash)
         
         hash is the infohash of what to restore
         files is a dict of {'key': encrypted key, 'zipfile': zipfilename, 'files': [list of file tuples (filename, id)] }
@@ -43,7 +52,7 @@ class Restore:
         Backups are encrypted with a uuid4 key, the key is encrypted with the clients public key, and the encrypted key string is 
         in uni-code, that needs to be encoded so a string comes back. 
         """
-        assert not hash == None
+        assert not infohash == None
         assert not files == None
 
         # Get the backupkey that encrypted the zip we need from the cloud
@@ -53,21 +62,20 @@ class Restore:
 
         # Get this infohash from the cloud first, decrypt and put in temp directory
         try:
-            log.debug("cloud.get (%s)" % hash)
-            self.cloud.get(hash)
+            log.debug("cloud.get (%s)" % infohash)
+            self.cloud.get(infohash)
             
-            # we have the file, now decrypt and put into temp directory
+            # decrypt the cloud file to our temp directory, so we can extract the file(s) we need.
             encrypt.decrypt_file(backupkey,
-                                 self._clouddir() + "\\" + files['zipfile'],
-                                 self._tempdir() +  "\\" + files['zipfile'],
+                                 os.path.join(self._clouddir(),files['zipfile'] ),
+                                 os.path.join(self._tempdir(),files['zipfile'] ),
                                 )
-
-            # open the zip
-            zf = zipfile.ZipFile(self._tempdir() +  "\\" + files['zipfile'])
+            zf = zipfile.ZipFile( os.path.join(self._tempdir(),files['zipfile']) )
 
             # loop through all the files for this restore
             for f in files['files']:
                 # f is a tuple (filename, id from DB), so break it out for rest of loop
+                
                 fr = f[0]  # fr = File to Restore
                 fid = f[1] # fid = file ID
 
@@ -78,7 +86,7 @@ class Restore:
                     # so we have to massage the filename to get.
                     infoname = os.path.splitdrive(fr)[1].replace("\\","/")[1:]
                       
-                    restoreinfo = zf.getinfo(infoname)
+                    zf.getinfo(infoname)    # if this fails, it throws and exception.
                     log.debug("found file in zip")
     
                     # now that we have the info, lets read it to a destination.
@@ -87,17 +95,22 @@ class Restore:
                     restore.close()
                     log.debug("File restored")
 
-                    postdata = {"file":fid, "status":"complete"}
-                    req = requests.post(self.restoreurl,data=postdata)
-                    
+                    postdata = {"file":fid,
+                                "status":"complete"
+                                }
+                    requests.post(self.restoreurl,data=postdata)    # the result should be checked.
+
+                except KeyError:
+                    log.critical("Keyerror raised in the zipinfo section of restore")
+
                 except:
                     postdata = {"file":fid, "status":"fail"}
-                    req = requests.post(self.restoreurl,data=postdata)
+                    requests.post(self.restoreurl,data=postdata)    # the result should be checked.
                 
             zf.close()
             
             log.debug("Remove temp zip file.")
-            os.remove( self._tempdir() +  "\\" + files['zipfile'] )
+            os.remove( os.path.join(self._tempdir(),files['zipfile']) )
 
         except:
             log.exception("error in getting cloud file")
@@ -110,8 +123,8 @@ class Restore:
         assert not self.cloud == None
         
         self.restoreurl = "http://" + self.settings["tracker_ip"] + "/manager/restore/" + self.settings[".guid"] + "/"
-        
-        log.debug("checking for any restores")
+
+        log.debug("Restore.Check() start")
         # check if there are any restores
         req = requests.get(self.restoreurl)
         
@@ -127,13 +140,13 @@ class Restore:
                 log.debug( "Restoring for job %s" % wholeid )
 
                 for x in restoredict['restores']:
-                    self._restorefiles( hash=x, files=restoredict['restores'][x] )
+                    self._restorefiles( infohash=x, files=restoredict['restores'][x] )
 
                 # update job as completed.
                 log.debug("Job complete")
                 postdata = {"restore":wholeid, 'status':'complete'}
                 req = requests.post(self.restoreurl, data=postdata)
-        
+
             except:
                 log.exception("error restoring")
                 raise
@@ -143,9 +156,4 @@ class Restore:
             # don't really care what else we got - FOR NOW.
             pass    
     
-
-
-    
-
-
-
+        log.debug("Restore check() done")

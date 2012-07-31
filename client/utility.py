@@ -1,10 +1,21 @@
 import os
-import stat
 import httplib
 import urllib
 import shutil
 
-import win32file
+import win32file, win32api
+
+def LogicalDrives():
+    drives = []
+    
+    drivelist = win32api.GetLogicalDriveStrings().split("\x00")
+    
+    for drive in drivelist[:-1]:
+        if win32file.GetDriveType(drive)==3:
+            drives += [drive]
+            
+    return drives
+    
 
 def EmptyADir(path):
 
@@ -100,7 +111,7 @@ def check_dir(path=None):
         raise Exception("Can't check a blank path")
         
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 
 def validate_settings(settings = None):

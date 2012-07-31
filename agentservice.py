@@ -76,10 +76,13 @@ class BackupService(win32serviceutil.ServiceFramework):
             BackupFromCloud(c, settings)
 
         insdir = settings['.installdir']
+        
         td = os.path.normpath(insdir + settings['cloud_meta'] )
         utility.check_dir(td)
+        
         dd = os.path.normpath(insdir + settings['cloud_files'] )
-        utility.check_dir(dd) 
+        utility.check_dir(dd)
+         
         sd = os.path.normpath(insdir + settings['cloud_meta'] )
         
         # erase all files in our temp directory on startup.

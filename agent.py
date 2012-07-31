@@ -7,6 +7,7 @@ from client.torrent import cloud
 from client.tasker import Tasker
 from client import utility
 from client.backupcloud import BackupFromCloud, BackupToCloud
+from client import restore
 
 import os
 
@@ -54,6 +55,9 @@ if __name__== "__main__":
                     session_dir = sd,
                     )
 
+    # moving to objects for scheduled things.
+    r = restore.Restore(cloud=c, settings=settings)
+
     # main schedule queue.
     s = Tasker(sigStop, int(settings["sigstop"] or 5) )
 
@@ -62,6 +66,9 @@ if __name__== "__main__":
 
     log.debug("adding BFC")
     s.addtask(BFC, int(settings["bfctime"] or 0) )
+
+    log.debug("Adding RFC")
+    s.addtask(r.check, int(settings["rfctime"] or 0) )
 
     # start our cloud()
     log.debug("Starting the cloud")
