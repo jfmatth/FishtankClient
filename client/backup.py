@@ -65,7 +65,7 @@ def BackupGenerator(spec = None,
         drives   - the outer loop of which locations to backup (C:/, d:/, etc), can be folder qualification too.
         limit    - how big in MB should each (pre compressed) backup set be before yielding. backed up
     """
-    
+   
     if (spec == None or temppath == None or datapath == None or drives == None):
         raise Exception("invalid values for Backup")
 
@@ -76,12 +76,14 @@ def BackupGenerator(spec = None,
     log.debug("datapath = %s" % datapath)
     log.debug("drives = %s" % drives)
 
-    maxfilecount = 1000
+    maxfilecount = 10000
 
     try:
         fulldbname = os.path.join(datapath, "dbfull.db")
         
-        _limit = limit * 1024 * 1024
+        # change how we use limit, have the calling user set it correctly in actual bytes.
+        #_limit = limit * 1024 * 1024
+        _limit = limit
         log.debug("filesize = %s" % _limit)
         _size = 0 
         _zip    = None
@@ -121,11 +123,16 @@ def BackupGenerator(spec = None,
                     
                     for f in files:
                         fullpath = os.path.normcase(os.path.normpath(os.path.join(root,f) ) ) 
-    
+
                         if os.path.isfile(fullpath) and spec.fileok(fullpath):
                             try:
                                 finfo = fileinfo(fullpath)
                                 
+                                # filesize max check
+                                if int(finfo['size']) > _limit:
+                                    log.debug("file %s too big, skipping" % fullpath)
+                                    continue 
+
                                 if not _dbfull.has_key(fullpath) or not json.loads(_dbfull[fullpath])['crc'] == finfo['crc']:
                                     # it's not in our DB or it's different, then update the DB and the zip
                                     
@@ -140,11 +147,11 @@ def BackupGenerator(spec = None,
                                     _zip.write(fullpath)
                                     _dbdiff[fullpath] = sfinfo
                                     _count += 1
-        
+
                                     _size  += finfo['size']
-        
+
                                     # check for stop 'zipping' condition.
-                                    if (_size >= _limit or _count >= maxfilecount or stoprunning):
+                                    if (_size >= _limit or _count >= maxfilecount):
                                         log.debug("Size: %s, len(_dbdiff) = %s " % (_size, len(_dbdiff) ) )
                                         _zip.close()
                                         _dbdiff.close()
@@ -159,7 +166,6 @@ def BackupGenerator(spec = None,
      
         log.debug("Done looping over drives")
 
-    
         if stoprunning:
             log.debug("Stoprunning signal received")
             
@@ -177,8 +183,7 @@ def BackupGenerator(spec = None,
             yield zf, dbf
     
     except StopIteration:
-        #                        stoprunning = True
-        #                        break
+        # something stopped us, so clean up.
         if not _zip == None:
             _zip.close()
             _dbdiff.close()
@@ -190,7 +195,6 @@ def BackupGenerator(spec = None,
             os.remove(zf)
             _size = 0
             _count = 0
-            
     
     except:
         log.exception("Error in BackupGenerator")

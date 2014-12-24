@@ -45,14 +45,6 @@ def BackupFromCloud( cloud = None,
 	clouddir = os.path.normpath(os.path.join(settings['.installdir'], settings['cloud_files']) )
 	cloudspace = utility.pathspaceinfo(clouddir)
 
-#	percFree = int(settings["max_free_perc"]) / 100.00
-#	maxGB = int(settings["min_free_gb"]) * 1024 * 1024 * 1024
-
-#	#calculate free space
-#	fs = utility.get_free_space("\\")
-#	
-#	amount = min(int(fs*percFree), int(maxGB))
-
 	# we will ask for a torrent of size < = amount then.
 	managerhost = settings[".managerhost"]
 	guid = settings[".guid"]
@@ -62,7 +54,7 @@ def BackupFromCloud( cloud = None,
 
 	HTTPConnection.request("POST", URL, parms)
 	response = HTTPConnection.getresponse()
-	
+
 	if response.status != 200:
 		log.debug("error : URL: %s msg:%s txt:%s" % (URL, response.reason, response.read() ) )
 	else:
@@ -71,7 +63,7 @@ def BackupFromCloud( cloud = None,
 			# get it from the cloud()
 			log.info("Asing for hash %s" % infohash)
 			cloud.get(infohash)
-			
+
 	log.debug("BackupFromCloud() finished")
 
 
@@ -89,26 +81,6 @@ class BackupSpec():
 		if dirname is a match to our regex, the return FALSE, otherwise return TRUE.  Sort of 
 		unintuitive, but directories that match won't be backed up.
 		"""
-#		try:
-#			if not dirname==None:
-#				# loop over all of self.dirlist to see this directory starts with any of them
-#				for xdir in self.dirlist:
-#					if os.path.normpath(dirname).lower().startswith(os.path.normpath(xdir).lower()):
-#						log.debug("Skipping directory %s" % dirname)
-#						return False
-#				
-#				# if we get this far, then there was no match.
-#				log.debug("checking %s" % dirname)
-#				return True
-#			else:
-#				log.debug("checking %s" % dirname)
-#
-#				return True							# nothing specified, so backup/
-#		except:
-#			log.exception("Error in dirok function checking")
-#			return False
-
-		# change to using a regex for each directory.
 		if not dirname==None:
 			if self.dirregex.match(dirname):
 				return False
@@ -171,7 +143,6 @@ def BackupToCloud(	cloud = None,
 	
 	if settings["temppath"] == None:
 		raise("No temppath specified")
-	#temppath = settings['temppath']
 	temppath = os.path.normpath(insdir + settings['temppath'])
 	utility.check_dir(temppath)
 	log.info("temppath = %s" % temppath)
@@ -182,18 +153,22 @@ def BackupToCloud(	cloud = None,
 	utility.check_dir(dbpath)
 	log.info("dbpath = %s" % dbpath)
 	
-#	if not settings["backupdrives"]==None:
-#		drives = settings["backupdrives"].split(",")
-#	else:
-#		raise Exception("No backupdrives specified")
-
 	drives = utility.LogicalDrives()
-
 	log.info("drives = %s" % drives)
-	
+
+	# put the calculation here for the full backup size, default is 100 MB
 	backupsize = settings["backupsize"] or 100
-	backupsize = int(backupsize)
-	
+	backupsize = int(backupsize) * 1024 * 1024
+		
+### this needs to be moved into the generator portion of the code
+	# check to see how much free space we have, and if we have enough to backup anything?
+	size, free = utility.diskspaceinfo(os.path.splitdrive(settings[".installdir"])[0] )
+	if free <= backupsize * 2  :
+		log.info("no room for backup, sorry")
+		log.debug("freespace = %s, backupsize = %s" % (free, backupsize))
+		return
+###
+
 	# define new BackupSpec varaiable that we can pass in to check for dirs and files to backup.
 	installdir = settings['.installdir'].replace("\\", "\\\\").lower()
 	dirspec = settings['dirspec'] + '|' + installdir
@@ -206,6 +181,7 @@ def BackupToCloud(	cloud = None,
 		raise("no cloud_files specified")
 	cloudpath = os.path.normpath(insdir + settings['cloud_files'])
 	utility.check_dir(cloudpath)
+
 	log.info("Starting backup loop")
 
 	# define them here, since we need to check them at close
@@ -216,17 +192,10 @@ def BackupToCloud(	cloud = None,
 		log.debug("stopfunc returned true, returning from module.")
 		return
 	
-	#
 	# we get backup 'sets' in sizes of limit in each loop
 	# once we get a generated pair (zf=zipfile, dbf=database of files in zip), we encrypt and upload to tracker.
-	#
-#	for zf, dbf in backup.BackupGenerator(filespec, temppath, dbpath, drives, limit=backupsize, stopbackup=stopfunc):
 	for zf, dbf in backup.BackupGenerator(backupspec, temppath, dbpath, drives, limit=backupsize, stopbackup=stopfunc):
 
-#		if stopfunc():
-#			log.debug("Stopping backup loop due to stopfunc() or server_ping")
-#			break
-		
 		# we should be able to modularize this better, but it is somewhat critical section, 
 		# if any of the items below are interrupted, then the backup will be incomplete.
 
@@ -292,22 +261,20 @@ def BackupToCloud(	cloud = None,
 			if os.path.exists(zf):
 				log.debug("erasing %s" % zf)
 				os.remove(zf)
+
+			# free disk space check (Again)
+			size, free = utility.diskspaceinfo(os.path.splitdrive(settings[".installdir"])[0] )
+			if free <= backupsize * 2 :
+				log.info("no room for backup, sorry")
+				log.debug("freespace = %s, backupsize = %s" % (free, backupsize))
+				break				
+
+			log.debug("Continuing")
+				
 		except:
 			log.exception("Exception after Backup Generation")
 			raise
-		
-#		if stopfunc():
-#			log.debug("Stopping backup for loop")
-#			break
 
-#	log.debug("cleaning up session..")
-#	if os.path.exists(dbf):
-#		log.debug("erasing %s" % dbf)
-#		os.remove(dbf)
-#
-#	if os.path.exists(zf):
-#		log.debug("erasing %s" % zf)
-#		os.remove(zf)
 	if not _dbfull == None:
 		log.debug("closing dbfull")
 		_dbfull.close()

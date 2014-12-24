@@ -60,6 +60,8 @@ class BackupService(win32serviceutil.ServiceFramework):
         from client.backupcloud import BackupFromCloud, BackupToCloud
         from client import utility 
 
+        from client import restore
+
         # try to put our logger on the class log variable
         self.pythonlog = log
 
@@ -74,6 +76,7 @@ class BackupService(win32serviceutil.ServiceFramework):
 
         def BFC():
             BackupFromCloud(c, settings)
+
 
         insdir = settings['.installdir']
         
@@ -96,6 +99,9 @@ class BackupService(win32serviceutil.ServiceFramework):
                         session_dir = sd
                         )
 
+#        # add restore functionality.
+        r = restore.Restore(cloud=c, settings=settings)
+
         # main schedule queue.
         log.info("Starting agent")
 
@@ -107,6 +113,10 @@ class BackupService(win32serviceutil.ServiceFramework):
         
         log.debug("adding BFC")
         s.addtask(BFC, int(settings["bfctime"] or 0) )
+
+        log.debug("adding RFC")
+        s.addtask(r.check, int(settings["rfctime"] or 0) )
+
 
         # start our cloud()
         log.info("Starting the cloud")
